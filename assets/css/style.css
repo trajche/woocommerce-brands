@@ -24,22 +24,68 @@
 }
 
 /* Brand thumbnails widget */
-.widget .brand-thumbnails, .brand-thumbnails {
-	overflow: hidden;
-	zoom: 1;
-	margin: 0;
+ul.brand-thumbnails {
+	margin-left: 0;
+	margin-bottom: 0;
 	clear: both;
 	list-style: none;
 }
-.widget .brand-thumbnails li, .brand-thumbnails li {
-	float: left;
-	padding: 0;
-	margin: 0 2% 2% 0;
+
+ul.brand-thumbnails:before {
+	clear: both;
+	content: "";
+	display: table;
 }
-.widget .brand-thumbnails li.last, .brand-thumbnails li.last {
+
+ul.brand-thumbnails:after {
+	clear: both;
+	content: "";
+	display: table;
+}
+
+ul.brand-thumbnails li {
+	float: left;
+	margin: 0 3.8% 1em 0;
+	padding: 0;
+	position: relative;
+	width: 22.05%; /* 4 columns */
+	margin-left: 0;
+}
+
+ul.brand-thumbnails.fluid-columns li {
+	width: auto;
+}
+
+ul.brand-thumbnails:not(.fluid-columns) li.first {
+	clear: both;
+}
+
+ul.brand-thumbnails:not(.fluid-columns) li.last {
 	margin-right: 0;
 }
-.widget .brand-thumbnails li img, .brand-thumbnails li img {
+
+ul.brand-thumbnails.columns-1 li {
+	width: 100%;
+	margin-right: 0;
+}
+
+ul.brand-thumbnails.columns-2 li {
+	width: 48%;
+}
+
+ul.brand-thumbnails.columns-3 li {
+	width: 30.75%;
+}
+
+ul.brand-thumbnails.columns-5 li {
+	width: 16.95%;
+}
+
+ul.brand-thumbnails.columns-6 li {
+	width: 13.5%;
+}
+
+.brand-thumbnails li img {
 	-webkit-box-sizing: border-box; /* Safari/Chrome, other WebKit */
 	-moz-box-sizing: border-box;    /* Firefox, other Gecko */
 	box-sizing: border-box;         /* Opera/IE 8+ */
@@ -47,6 +93,28 @@
 	max-width: none;
 	height: auto;
 	margin: 0;
+}
+
+@media screen and (max-width: 768px) {
+	ul.brand-thumbnails:not(.fluid-columns) li {
+		width: 48% !important;
+	}
+
+	ul.brand-thumbnails:not(.fluid-columns) li.first {
+		clear: none;
+	}
+
+	ul.brand-thumbnails:not(.fluid-columns) li.last {
+		margin-right: 3.8%
+	}
+
+	ul.brand-thumbnails:not(.fluid-columns) li:nth-of-type(odd) {
+		clear: both;
+	}
+	
+	ul.brand-thumbnails:not(.fluid-columns) li:nth-of-type(even) {
+		margin-right: 0;
+	}
 }
 
 /* Brand thumbnails description */

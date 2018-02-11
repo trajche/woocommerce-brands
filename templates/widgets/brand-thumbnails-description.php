@@ -7,7 +7,7 @@
 
 	<?php foreach ( $brands as $index => $brand ) :
 
-		$thumbnail = get_brand_thumbnail_url( $brand->term_id, apply_filters( 'woocommerce_brand_thumbnail_size', 'brand-thumb' ) );
+		$thumbnail = get_brand_thumbnail_url( $brand->term_id, apply_filters( 'woocommerce_brand_thumbnail_size', 'shop_catalog' ) );
 
 		if ( ! $thumbnail )
 			$thumbnail = wc_placeholder_img_src();

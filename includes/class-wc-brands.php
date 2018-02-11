@@ -5,8 +5,6 @@
  */
 class WC_Brands {
 
-	const E_WC_COUPON_EXCLUDED_BRANDS = 115;
-
 	var $template_url;
 	var $plugin_path;
 
@@ -16,11 +14,8 @@ class WC_Brands {
 	public function __construct() {
 		$this->template_url = apply_filters( 'woocommerce_template_url', 'woocommerce/' );
 
-		if ( function_exists( 'add_image_size' ) ) {
-			add_image_size( 'brand-thumb', 300, 9999 );
-		}
-
 		add_action( 'woocommerce_loaded', array( $this, 'register_hooks' ) );
+		add_action( 'after_setup_theme', array( $this, 'add_custom_image_size' ) );
 
 		$this->register_shortcodes();
 	}
@@ -37,11 +32,11 @@ class WC_Brands {
 		add_action( 'wp', array( $this, 'body_class' ) );
 
 		add_action( 'woocommerce_product_meta_end', array( $this, 'show_brand' ) );
+		add_filter( 'woocommerce_structured_data_product', array( $this, 'add_structured_data' ), 20 );
 
-		// Coupon validation and error handling.
-		add_filter( 'woocommerce_coupon_is_valid', array( $this, 'validate_coupon' ), null, 2 );
-		add_filter( 'woocommerce_coupon_error', array( $this, 'add_coupon_error_message' ), null, 3 );
-		add_filter( 'woocommerce_coupon_get_discount_amount', array( $this, 'maybe_apply_discount' ), null, 5 );
+		// duplicate product brands
+		add_action( 'woocommerce_product_duplicate_before_save', array( $this, 'duplicate_store_temporary_brands' ), 10, 2 );
+		add_action( 'woocommerce_new_product', array( $this, 'duplicate_add_product_brand_terms' ) );
 
 		add_filter( 'post_type_link', array( $this, 'post_type_link' ), 11, 2 );
 
@@ -58,6 +53,19 @@ class WC_Brands {
 		add_filter( 'woocommerce_rest_prepare_product_object', array( $this, 'rest_api_prepare_brands_to_product' ), 10, 2 ); // WC 3.x
 		add_action( 'woocommerce_rest_insert_product', array( $this, 'rest_api_add_brands_to_product' ), 10, 3 ); // WC 2.6.x
 		add_action( 'woocommerce_rest_insert_product_object', array( $this, 'rest_api_add_brands_to_product' ), 10, 3 ); // WC 3.x
+
+		if ( version_compare( WC_VERSION, '3.2', '>=' ) ) {
+			require_once( 'class-wc-brands-coupons.php' );
+		} else {
+			require_once( 'class-wc-brands-coupons-legacy.php' );
+		}
+	}
+
+	/**
+	 * Add custom image size.
+	 */
+	public function add_custom_image_size() {
+		add_image_size( 'brand-thumb', 300, 9999 );
 	}
 
 	/**
@@ -157,221 +165,6 @@ class WC_Brands {
 		return $permalink;
 	} // End post_type_link()
 
-	/**
-	 * Display a specific error message if the coupon doesn't validate because of a brands-related element.
-	 *
-	 * @access public
-	 * @since  1.3.0
-	 * @param  string $err        The error message
-	 * @param  string $err_code   The error code
-	 * @param  object $coupon_obj Cart object
-	 * @return string
-	 */
-	public function add_coupon_error_message( $err, $err_code, $coupon_obj ) {
-		if ( self::E_WC_COUPON_EXCLUDED_BRANDS == $err_code ) {
-			$this->_set_brand_settings_on_coupon( $coupon_obj );
-
-			$brands = array();
-			if ( sizeof( WC()->cart->get_cart() ) > 0 ) {
-				foreach( WC()->cart->get_cart() as $cart_item_key => $cart_item ) {
-
-					$product_brands = wp_get_post_terms( $cart_item['product_id'], 'product_brand', array( 'fields' => 'ids' ) );
-					if ( sizeof( $intersect = array_intersect( $product_brands, $coupon_obj->excluded_brands ) ) > 0 ) {
-						foreach( $intersect as $cat_id) {
-							$cat = get_term( $cat_id, 'product_brand' );
-							$brands[] = $cat->name;
-						}
-					}
-				}
-			}
-
-			$err = sprintf( __( 'Sorry, this coupon is not applicable to the brands: %s.', 'wc_brands' ), implode( ', ', array_unique( $brands ) ) );
-		}
-		return $err;
-	}
-
-	/**
-	 * Conditionally apply brands discounts.
-	 *
-	 * @access private
-	 * @since  1.3.1
-	 * @return  void
-	 */
-	public function maybe_apply_discount( $discount, $discounting_amount, $cart_item, $single, $this_obj ) {
-		// Deal only with product-centric coupons.
-		if ( ! is_a( $this_obj, 'WC_Coupon' ) || ! $this_obj->is_type( array( 'fixed_product', 'percent_product' ) ) ) {
-			return $discount;
-		}
-
-		$product_brands = wp_get_post_terms( $cart_item['product_id'], 'product_brand', array( 'fields' => 'ids' ) );
-
-		// If our coupon brands aren't present in the products in our cart, don't assign the discount.
-		if ( ! empty( $this_obj->included_brands ) && ! $this->_product_has_brands( $product_brands, $this_obj->included_brands ) ) {
-			$discount = 0;
-		}
-
-		// If our excluded coupon brands are present in the products in our cart, don't assign the discount.
-		if ( ! empty( $this_obj->excluded_brands ) && $this->_product_has_brands( $product_brands, $this_obj->excluded_brands ) ) {
-			$discount = 0;
-		}
-
-		return $discount;
-	}
-
-	/**
-	 * Check whether given product brands are assigned to the current coupon being inspected.
-	 *
-	 * @access private
-	 * @since  1.3.1
-	 * @return  void
-	 */
-	private function _product_has_brands( $product_brands, $coupon_brands ) {
-		return sizeof( array_intersect( $product_brands, $coupon_brands ) ) > 0;
-	}
-
-	/**
-	 * This validate coupon based on included and/or excluded product brands on
-	 * a given coupon.
-	 *
-	 * If followings conditions are met, exception will be thrown and displayed
-	 * as error notice on the cart page:
-	 *
-	 * * Coupon has Product Brands restriction set and no item in the cart is associated
-	 *   with the Product Brands.
-	 * * For cart-based discount, NOT all items are in Product Brands.
-	 * * Coupon has Exclude Brands restriction set and all items in the cart are associated
-	 *   with the Exclude Brands.
-	 * * For cart-based discount, part of cart items are in the Exclude Brands restriction.
-	 *
-	 * @throws Exception
-	 *
-	 * @param bool      $valid      Whether the coupon is valid
-	 * @param WC_Coupon $coupon_obj Coupon object
-	 *
-	 * @return bool True if coupon is valid, otherwise Exception will be thrown
-	 */
-	public function validate_coupon( $valid, $coupon_obj ) {
-		$this->_set_brand_settings_on_coupon( $coupon_obj );
-
-		// Only check if coupon still valid.
-		if ( $valid ) {
-			$valid = $this->_validate_included_product_brands( $valid, $coupon_obj );
-			$valid = $this->_validate_excluded_product_brands( $valid, $coupon_obj );
-		}
-
-		return $valid;
-	}
-
-	/**
-	 * Set brand settings as properties on coupon object. These properties are
-	 * list of included product brand IDs and list of excluded brand IDs.
-	 *
-	 * @param WC_Coupon $coupon_obj Coupon object
-	 *
-	 * @return void
-	 */
-	private function _set_brand_settings_on_coupon( $coupon_obj ) {
-		if ( isset( $coupon_obj->included_brands ) && isset( $coupon_obj->excluded_brands ) ) {
-			return;
-		}
-
-		$coupon_id = is_callable( array( $coupon_obj, 'get_id' ) ) ? $coupon_obj->get_id() : $coupon_obj->id;
-		$included_product_brands = get_post_meta( $coupon_id, 'product_brands', true );
-		if ( empty( $included_product_brands ) ) {
-			$included_product_brands = array();
-		}
-		$excluded_product_brands = get_post_meta( $coupon_id, 'exclude_product_brands', true );
-		if ( empty( $excluded_product_brands ) ) {
-			$excluded_product_brands = array();
-		}
-
-		// Store these for later, to avoid multiple look-ups when we filter on the discount.
-		$coupon_obj->included_brands = $included_product_brands;
-		$coupon_obj->excluded_brands = $excluded_product_brands;
-	}
-
-	/**
-	 * Validate whether cart items are in Product Brands restriction. If no item
-	 * is in Product Brands then Exception will be thrown. Or, if coupon is cart-
-	 * based discount, Exception will be thrown if NOT all items are in Product Brands.
-	 *
-	 * @throws Exception
-	 *
-	 * @param bool      $valid
-	 * @param WC_Coupon $coupon_obj
-	 *
-	 * @return bool
-	 */
-	private function _validate_included_product_brands( $valid, $coupon_obj ) {
-		if ( sizeof( $coupon_obj->included_brands ) > 0 ) {
-			$num_items_match_included = 0;
-			if ( ! WC()->cart->is_empty() ) {
-				foreach( WC()->cart->get_cart() as $cart_item ) {
-					$product_brands = wp_get_post_terms( $cart_item['product_id'], 'product_brand', array( 'fields' => 'ids' ) );
-					if ( $this->_product_has_brands( $product_brands, $coupon_obj->included_brands ) ) {
-						$num_items_match_included++;
-					}
-				}
-			}
-
-			// For cart-based discount, all items MUST BE in Product Brands.
-			if ( $coupon_obj->is_type( array( 'fixed_cart', 'percent' ) ) && $num_items_match_included < sizeof( WC()->cart->get_cart() ) ) {
-				throw new Exception( $coupon_obj::E_WC_COUPON_NOT_APPLICABLE );
-			}
-
-			// No item in Product Brands.
-			if ( $num_items_match_included === 0 ) {
-				throw new Exception( $coupon_obj::E_WC_COUPON_NOT_APPLICABLE );
-			}
-		}
-
-		return $valid;
-	}
-
-	/**
-	 * Validate whether cart items are in the Exclude Brands restriction.
-	 *
-	 * If coupon has Exclude Brands restriction set and all items in the cart are associated
-	 * with the Exclude Brands then Exception will be thrown.
-	 *
-	 * For cart-based discount, if part of cart items are in the Exclude Brands restriction
-	 * then Exception will be thrown.
-	 *
-	 * @throws Exception
-	 *
-	 * @param bool      $valid
-	 * @param WC_Coupon $coupon_obj
-	 *
-	 * @return bool
-	 */
-	private function _validate_excluded_product_brands( $valid, $coupon_obj ) {
-		if ( sizeof( $coupon_obj->excluded_brands ) > 0 ) {
-			$num_items_match_excluded = 0;
-			if ( ! WC()->cart->is_empty() ) {
-				foreach( WC()->cart->get_cart() as $cart_item ) {
-					$product_brands = wp_get_post_terms( $cart_item['product_id'], 'product_brand', array( 'fields' => 'ids' ) );
-					if ( $this->_product_has_brands( $product_brands, $coupon_obj->excluded_brands ) ) {
-						$num_items_match_excluded++;
-					}
-				}
-			}
-
-			// If all items in the cart are in Exclude Brands properties, coupon
-			// is not applicable.
-			if ( sizeof( WC()->cart->get_cart() ) === $num_items_match_excluded ) {
-				throw new Exception( self::E_WC_COUPON_EXCLUDED_BRANDS );
-			}
-
-			// For cart-based discount, if at least on item in the Exclude Brands then
-			// coupon is not applicable.
-			if ( $coupon_obj->is_type( array( 'fixed_cart', 'percent' ) ) && $num_items_match_excluded > 0 ) {
-				throw new Exception( self::E_WC_COUPON_EXCLUDED_BRANDS );
-			}
-		}
-
-		return $valid;
-	}
-
 	public function body_class() {
 		if ( is_tax( 'product_brand' ) ) {
 			add_filter( 'body_class', array( $this, 'add_body_class' ) );
@@ -398,9 +191,18 @@ class WC_Brands {
 
 		$shop_page_id = wc_get_page_id( 'shop' );
 
-		$base_slug = $shop_page_id > 0 && get_page( $shop_page_id ) ? get_page_uri( $shop_page_id ) : 'shop';
-
+		$base_slug     = $shop_page_id > 0 && get_page( $shop_page_id ) ? get_page_uri( $shop_page_id ) : 'shop';
 		$category_base = get_option('woocommerce_prepend_shop_page_to_urls') == "yes" ? trailingslashit( $base_slug ) : '';
+
+		$slug = $category_base . __( 'brand', 'wc_brands' );
+		if ( '' === $category_base ) {
+			$slug = get_option( 'woocommerce_brand_permalink', '' );
+		}
+
+		// Can't provide transatable string as get_option default.
+		if ( '' === $slug ) {
+			$slug = __( 'brand', 'wc_brands' );
+		}
 
 		register_taxonomy( 'product_brand',
 			array('product'),
@@ -431,7 +233,11 @@ class WC_Brands {
 					'assign_terms' => 'assign_product_terms'
 				),
 
-				'rewrite' => array( 'slug' => $category_base . __( 'brand', 'wc_brands' ), 'with_front' => false, 'hierarchical' => true )
+				'rewrite' => array( 
+					'slug'         => $slug,
+					'with_front'   => false,
+					'hierarchical' => true
+				)
 			) )
 		);
 	}
@@ -540,6 +346,30 @@ class WC_Brands {
 
 			echo get_brands( $post->ID, ', ', ' <span class="posted_in">' . sprintf( _n( '%1$s: ', '%2$s: ', $brand_count ), $labels->singular_name, $labels->name ), '</span>' );
 		}
+	}
+
+	/**
+	 * Add structured data to product page.
+	 *
+	 * @access public
+	 * @param  array $markup
+	 * @return array $markup
+	 */
+	public function add_structured_data( $markup ) {
+		global $post;
+
+		if ( array_key_exists( 'brand', $markup ) ) {
+			return $markup;
+		}
+
+		$brands = get_the_terms( $post->ID, 'product_brand' );
+
+		if ( ! empty( $brands ) && is_array( $brands ) ) {
+			// Can only return one brand, so pick the first.
+			$markup['brand'] = $brands[0]->name;
+		}
+
+		return $markup;
 	}
 
 	/**
@@ -687,17 +517,24 @@ class WC_Brands {
 		foreach ( $terms as $term ) {
 
 			$term_letter = substr( $term->slug, 0, 1 );
+			$alphabet    = apply_filters( 'woocommerce_brands_list_alphabet', range( 'a', 'z' ) );
+			$numbers     = apply_filters( 'woocommerce_brands_list_numbers', '0-9' );
+
+			// Allow a locale to be set for ctype_alpha()
+			if ( has_filter( 'woocommerce_brands_list_locale' ) ) {
+				setLocale( LC_CTYPE, apply_filters( 'woocommerce_brands_list_locale', 'en_US.UTF-8' ) );
+			}
 
 			if ( ctype_alpha( $term_letter ) ) {
 
-				foreach ( range( 'a', 'z' ) as $i )
+				foreach ( $alphabet as $i )
 					if ( $i == $term_letter ) {
 						$product_brands[ $i ][] = $term;
 						break;
 					}
 
 			} else {
-				$product_brands[ '0-9' ][] = $term;
+				$product_brands[ $numbers ][] = $term;
 			}
 
 		}
@@ -706,7 +543,7 @@ class WC_Brands {
 
 		wc_get_template( 'shortcodes/brands-a-z.php', array(
 			'terms'          => $terms,
-			'index'          => array_merge( range( 'a', 'z' ), array( '0-9' ) ),
+			'index'          => array_merge( $alphabet, array( $numbers ) ),
 			'product_brands' => $product_brands,
 			'show_empty'     => $show_empty,
 			'show_top_links' => $show_top_links
@@ -752,8 +589,8 @@ class WC_Brands {
 
 		wc_get_template( 'widgets/brand-thumbnails.php', array(
 			'brands'        => $brands,
-			'columns'       => $columns,
-			'fluid_columns' => $fluid_columns
+			'columns'       => is_numeric( $columns ) ? intval( $columns ) : 4,
+			'fluid_columns' => wp_validate_boolean( $fluid_columns )
 		), 'woocommerce-brands', untrailingslashit( plugin_dir_path( dirname( __FILE__ ) ) ) . '/templates/' );
 
 		return ob_get_clean();
@@ -924,14 +761,56 @@ class WC_Brands {
 	 * @version 1.5.2
 	 */
 	public function rest_api_add_brands_to_product( $product, $request, $creating = true ) {
-		$product_id   = is_callable( array( $product, 'get_id' ) ) ? $product->get_id() : ( ! empty( $product->ID ) ? $product->ID : null );
-		$request_body = json_decode( $request->get_body() );
-		$brands       = isset( $request_body->brands ) ? $request_body->brands : array();
+		$product_id = is_callable( array( $product, 'get_id' ) ) ? $product->get_id() : ( ! empty( $product->ID ) ? $product->ID : null );
+		$params     = $request->get_params();
+		$brands     = isset( $params['brands'] ) ? $params['brands'] : array();
 
 		if ( ! empty( $brands ) ) {
 			$brands = array_map( 'absint', $brands );
 			wp_set_object_terms( $product_id, $brands, 'product_brand' );
 		}
+	}
+
+	/**
+	 * Temporarily tag a post with meta before it is saved in order
+	 * to allow us to be able to use the meta when the product is saved to add
+	 * the brands when an ID has been generated.
+	 *
+	 * @since 1.5.3
+	 *
+	 * @param WC_Product $duplicate
+	 * @return WC_Product $original
+	 */
+	public function duplicate_store_temporary_brands( $duplicate, $original ) {
+		$terms = get_the_terms( $original->get_id(), 'product_brand' );
+		if ( ! is_array( $terms ) ) {
+			return;
+		}
+
+		$ids = array();
+		foreach ( $terms as $term ) {
+			$ids[] = $term->term_id;
+		}
+		$duplicate->add_meta_data( 'duplicate_temp_brand_ids', $ids );
+	}
+
+	/**
+	 * After product was added check if there are temporary brands and
+	 * add them officially and remove the temporary brands.
+	 *
+	 * @since 1.5.3
+	 *
+	 * @param int $product_id
+	 */
+	public function duplicate_add_product_brand_terms( $product_id ) {
+		$product = wc_get_product( $product_id );
+		$term_ids = $product->get_meta( 'duplicate_temp_brand_ids' );
+		if ( empty( $term_ids ) ) {
+			return;
+		}
+		$term_taxonomy_ids = wp_set_object_terms( $product_id, $term_ids, 'product_brand' );
+		$product->delete_meta_data( 'duplicate_temp_brand_ids' );
+		$product->save();
 	}
 }
 

@@ -1,5 +1,23 @@
 *** Brands Changelog ***
 
+2018-01-24 - version 1.6.0
+* Fix   - Product brand thumbnail lists were not mobile-friendly.
+* Fix   - Use shop_catalog image size for brand images.
+* Fix   - Bulk creating products using the REST endpoint did not create brands.
+* Fix   - Prevent invalid permalink structure.
+* Fix   - Updated coupon validation logic for WooCommerce 2.3+
+* Tweak - PHP 7 compatibility.
+* Tweak - Add brands to Structured Data.
+* Tweak - Support non-latin [A-Z] alphabets with new filters for brand lists.
+* Enhancement: Allow brands permalink base to be changed in settings.
+* Enhancement: Add support for product CSV import/export.
+
+2017-12-14 - version 1.5.3
+* Fix   - Update pot file.
+* Fix   - when copying product also copy brands.
+* Tweak - Remove brands archive settings as this functionality must be added to theme.
+* Fix   - WC 3.3 compatibility.
+
 2017-06-22 - version 1.5.2
 * Fix - Access coupon property directly error.
 * Fix - Additional WC 3.0 compatibility for REST API.
