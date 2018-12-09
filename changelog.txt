@@ -1,5 +1,23 @@
 *** Brands Changelog ***
 
+2018-10-29 - version 1.6.4
+* Fix - No hierarchical display of child brands in Layered Nav widget.
+* Enhancement - Add optional category limit to brand_products shortcode.
+
+2018-10-11 - version 1.6.3
+* Fix - Better Filter widget compatibility.
+* Update - WC 3.5 compatibility.
+
+2018-05-22 - version 1.6.2
+* Update - WC 3.4 compatibility.
+
+2018-04-16 - version 1.6.1
+* Fix   - Add cache bust to stylesheet enqueue.
+* Fix   - Fix how the code uses constants from the coupon class.
+* Fix   - Brands not allowing coupons to be added from WP Admin.
+* Fix   - PHP 7.2 compatibility.
+* Tweak - Align item count in Brand layered nav widget.
+
 2018-01-24 - version 1.6.0
 * Fix   - Product brand thumbnail lists were not mobile-friendly.
 * Fix   - Use shop_catalog image size for brand images.

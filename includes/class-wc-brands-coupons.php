@@ -12,7 +12,7 @@ class WC_Brands_Coupons {
 	 */
 	public function __construct() {
 		// Coupon validation and error handling.
-		add_filter( 'woocommerce_coupon_is_valid', array( $this, 'is_coupon_valid' ), 10, 2 );
+		add_filter( 'woocommerce_coupon_is_valid', array( $this, 'is_coupon_valid' ), 10, 3 );
 		add_filter( 'woocommerce_coupon_is_valid_for_product', array( $this, 'is_valid_for_product' ), 10, 3 );
 		add_filter( 'woocommerce_coupon_error', array( $this, 'brand_exclusion_error' ), 10, 3 );
 	}
@@ -32,11 +32,11 @@ class WC_Brands_Coupons {
 	 * @param WC_Coupon $coupon Coupon object
 	 * @return bool     $valid  True if coupon is valid, otherwise Exception will be thrown
 	 */
-	public function is_coupon_valid( $valid, $coupon ) {
+	public function is_coupon_valid( $valid, $coupon, $discounts = null ) {
 		$this->set_brand_settings_on_coupon( $coupon );
 
 		// Only check if coupon still valid and the coupon has brand restrictions on it.
-		$brand_restrictions = ( sizeof( $coupon->included_brands ) > 0 || sizeof( $coupon->excluded_brands ) > 0 );
+		$brand_restrictions = ( ! empty( $coupon->included_brands ) || ! empty( $coupon->excluded_brands ) );
 		if ( $valid && ! $brand_restrictions && ! WC()->cart->is_empty() ) {
 			return $valid;
 		}
@@ -44,25 +44,36 @@ class WC_Brands_Coupons {
 		$included_brands_match   = false;
 		$excluded_brands_matches = 0;
 
-		foreach( WC()->cart->get_cart() as $cart_item ) {
+		$items = WC()->cart->get_cart();
+
+		// In case we're applying a coupon from the backend, use discounts items
+		if ( empty( $items ) && is_callable( array( $discounts, 'get_items' ) ) ) {
+			$items = array_map( function( $order_item_id ) {
+				return array(
+					'product_id' => $order_item_id,
+				);
+			}, array_keys( $discounts->get_items() ) );
+		}
+
+		foreach( $items as $cart_item ) {
 			$product_brands = $this->get_product_brands( $cart_item['product_id'] );
 
-			if ( sizeof( array_intersect( $product_brands, $coupon->included_brands ) ) > 0 ) {
+			if ( ! empty( array_intersect( $product_brands, $coupon->included_brands ) ) ) {
 				$included_brands_match = true;
 			}
 
-			if ( sizeof( array_intersect( $product_brands, $coupon->excluded_brands ) ) > 0 ) {
+			if ( ! empty( array_intersect( $product_brands, $coupon->excluded_brands ) ) ) {
 				$excluded_brands_matches++;
 			}
 		}
 
 		// 1) Coupon has a brand requirement but no products in the cart have the brand.
-		if ( ! $included_brands_match && sizeof( $coupon->included_brands ) > 0 ) {
-			throw new Exception( $coupon::E_WC_COUPON_NOT_APPLICABLE );
+		if ( ! $included_brands_match && ! empty( $coupon->included_brands ) ) {
+			throw new Exception( WC_Coupon::E_WC_COUPON_NOT_APPLICABLE );
 		}
 
 		// 2) All products in the cart match brand exclusion rule.
-		if ( sizeof( WC()->cart->get_cart() ) === $excluded_brands_matches ) {
+		if ( sizeof( $items ) === $excluded_brands_matches ) {
 			throw new Exception( self::E_WC_COUPON_EXCLUDED_BRANDS );
 		}
 
@@ -93,12 +104,12 @@ class WC_Brands_Coupons {
 		$product_brands = $this->get_product_brands( $product_id );
 
 		// Check if coupon has a brand requirement and if this product has that brand attached.
-		if ( sizeof( $coupon->included_brands ) && ! sizeof( array_intersect( $product_brands, $coupon->included_brands ) ) ) {
+		if ( ! empty( $coupon->included_brands ) && empty( array_intersect( $product_brands, $coupon->included_brands ) ) ) {
 			return false;
 		}
 
 		// Check if coupon has a brand exclusion and if this product has that brand attached.
-		if ( sizeof( $coupon->excluded_brands ) && sizeof( array_intersect( $product_brands, $coupon->excluded_brands ) ) ) {
+		if ( ! empty( $coupon->excluded_brands ) && ! empty( array_intersect( $product_brands, $coupon->excluded_brands ) ) ) {
 			return false;
 		}
 
@@ -127,7 +138,7 @@ class WC_Brands_Coupons {
 		foreach( WC()->cart->get_cart() as $cart_item_key => $cart_item ) {
 			$intersect = array_intersect( $this->get_product_brands( $cart_item['product_id'] ), $coupon->excluded_brands );
 
-			if ( sizeof( $intersect ) > 0 ) {
+			if ( ! empty( $intersect ) ) {
 				foreach( $intersect as $cat_id) {
 					$cat = get_term( $cat_id, 'product_brand' );
 					$brands[] = $cat->name;

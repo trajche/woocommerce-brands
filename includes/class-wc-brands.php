@@ -15,7 +15,6 @@ class WC_Brands {
 		$this->template_url = apply_filters( 'woocommerce_template_url', 'woocommerce/' );
 
 		add_action( 'woocommerce_loaded', array( $this, 'register_hooks' ) );
-		add_action( 'after_setup_theme', array( $this, 'add_custom_image_size' ) );
 
 		$this->register_shortcodes();
 	}
@@ -59,13 +58,9 @@ class WC_Brands {
 		} else {
 			require_once( 'class-wc-brands-coupons-legacy.php' );
 		}
-	}
 
-	/**
-	 * Add custom image size.
-	 */
-	public function add_custom_image_size() {
-		add_image_size( 'brand-thumb', 300, 9999 );
+		// Layered nav widget compatibility.
+		add_filter( 'woocommerce_layered_nav_term_html', array( $this, 'woocommerce_brands_update_layered_nav_link' ), 10, 4 );
 	}
 
 	/**
@@ -84,7 +79,7 @@ class WC_Brands {
 
 				$terms 	= array_map( 'intval', explode( ',', $_GET[ 'filter_product_brand' ] ) );
 
-				if ( sizeof( $terms ) > 0 ) {
+				if ( ! empty( $terms ) ) {
 					$matched_products = get_posts(
 						array(
 							'post_type'     => 'product',
@@ -106,7 +101,7 @@ class WC_Brands {
 
 					$filtered_posts = array_merge( $filtered_posts, $matched_products );
 
-					if ( sizeof( $filtered_posts ) == 0 ) {
+					if ( empty( $filtered_posts ) ) {
 						$filtered_posts = $matched_products;
 					} else {
 						$filtered_posts = array_intersect( $filtered_posts, $matched_products );
@@ -178,7 +173,7 @@ class WC_Brands {
 	}
 
 	public function styles() {
-		wp_enqueue_style( 'brands-styles', plugins_url( '/assets/css/style.css', dirname( __FILE__ ) ) );
+		wp_enqueue_style( 'brands-styles', plugins_url( '/assets/css/style.css', dirname( __FILE__ ) ), array(), WC_BRANDS_VERSION );
 	}
 
 	/**
@@ -339,7 +334,8 @@ class WC_Brands {
 		global $post;
 
 		if ( is_singular( 'product' ) ) {
-			$brand_count = sizeof( get_the_terms( $post->ID, 'product_brand' ) );
+			$terms       = get_the_terms( $post->ID, 'product_brand' );
+			$brand_count = is_array( $terms ) ? sizeof( $terms ) : 0;
 
 			$taxonomy = get_taxonomy( 'product_brand' );
 			$labels   = $taxonomy->labels;
@@ -643,6 +639,7 @@ class WC_Brands {
 
 		$atts = shortcode_atts( array(
 			'per_page' => '12',
+			'category' => '',
 			'columns'  => '4',
 			'orderby'  => 'title',
 			'order'    => 'desc',
@@ -665,6 +662,7 @@ class WC_Brands {
 			'order'                => $ordering_args['order'],
 			'posts_per_page'       => $atts['per_page'],
 			'meta_query'           => $meta_query,
+			'product_cat'          => $atts['category'],
 			'tax_query'            => array(
 				array(
 					'taxonomy'     => 'product_brand',
@@ -769,6 +767,32 @@ class WC_Brands {
 			$brands = array_map( 'absint', $brands );
 			wp_set_object_terms( $product_id, $brands, 'product_brand' );
 		}
+	}
+
+	/**
+	 * Injects Brands filters into layered nav links.
+	 *
+	 * @param  string  $term_html Original link html.
+	 * @param  mixed   $term      Term that is currently added.
+	 * @param  string  $link      Original layered nav item link.
+	 * @param  number  $count     Number of items in that filter.
+	 * @return string             Term html.
+	 * @since 1.6.3
+	 * @version 1.6.3
+	 */
+	public function woocommerce_brands_update_layered_nav_link( $term_html, $term, $link, $count ) {
+		$filter_name = 'filter_product_brand';
+		if ( empty( $_GET[$filter_name] ) ) {
+			return $term_html;
+		}
+
+		$current_attributes = array_map( 'intval', explode( ',', $_GET['filter_product_brand'] ) );
+		$current_values     = ! empty( $current_attributes ) ? $current_attributes : array();
+		$link = add_query_arg( array( 'filtering' => '1', $filter_name => implode( ',', $current_values ) ), wp_specialchars_decode( $link ) );
+		$link = esc_url( $link );
+		$term_html = '<a rel="nofollow" href="' . $link . '">' . esc_html( $term->name ) . '</a>';
+		$term_html .= ' ' . apply_filters( 'woocommerce_layered_nav_count', '<span class="count">(' . absint( $count ) . ')</span>', $count, $term );
+		return $term_html;
 	}
 
 	/**

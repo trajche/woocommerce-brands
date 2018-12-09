@@ -2,9 +2,9 @@
 # This file is distributed under the same license as the WooCommerce Brands package.
 msgid ""
 msgstr ""
-"Project-Id-Version: WooCommerce Brands 1.6.0\n"
+"Project-Id-Version: WooCommerce Brands 1.6.2\n"
 "Report-Msgid-Bugs-To: https://support.woocommerce.com/hc/\n"
-"POT-Creation-Date: 2018-01-24 18:26:54+00:00\n"
+"POT-Creation-Date: 2018-05-22 21:32:45+00:00\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
@@ -14,8 +14,8 @@ msgstr ""
 "X-Generator: grunt-wp-i18n 0.5.4\n"
 
 #: includes/class-wc-brands-admin.php:31 includes/class-wc-brands-admin.php:532
-#: includes/class-wc-brands-admin.php:543 includes/class-wc-brands.php:212
-#: includes/class-wc-brands.php:214
+#: includes/class-wc-brands-admin.php:543 includes/class-wc-brands.php:204
+#: includes/class-wc-brands.php:206
 #: includes/widgets/class-wc-widget-brand-nav.php:146
 msgid "Brands"
 msgstr ""
@@ -109,51 +109,51 @@ msgid "Product brand base"
 msgstr ""
 
 #: includes/class-wc-brands-coupons-legacy.php:191
-#: includes/class-wc-brands-coupons.php:138
+#: includes/class-wc-brands-coupons.php:149
 msgid "Sorry, this coupon is not applicable to the brands: %s."
 msgstr ""
 
-#: includes/class-wc-brands.php:197 includes/class-wc-brands.php:204
+#: includes/class-wc-brands.php:189 includes/class-wc-brands.php:196
 msgid "brand"
 msgstr ""
 
-#: includes/class-wc-brands.php:215
+#: includes/class-wc-brands.php:207
 msgid "Brand"
 msgstr ""
 
-#: includes/class-wc-brands.php:216
+#: includes/class-wc-brands.php:208
 msgid "Search Brands"
 msgstr ""
 
-#: includes/class-wc-brands.php:217
+#: includes/class-wc-brands.php:209
 msgid "All Brands"
 msgstr ""
 
-#: includes/class-wc-brands.php:218
+#: includes/class-wc-brands.php:210
 msgid "Parent Brand"
 msgstr ""
 
-#: includes/class-wc-brands.php:219
+#: includes/class-wc-brands.php:211
 msgid "Parent Brand:"
 msgstr ""
 
-#: includes/class-wc-brands.php:220
+#: includes/class-wc-brands.php:212
 msgid "Edit Brand"
 msgstr ""
 
-#: includes/class-wc-brands.php:221
+#: includes/class-wc-brands.php:213
 msgid "Update Brand"
 msgstr ""
 
-#: includes/class-wc-brands.php:222
+#: includes/class-wc-brands.php:214
 msgid "Add New Brand"
 msgstr ""
 
-#: includes/class-wc-brands.php:223
+#: includes/class-wc-brands.php:215
 msgid "New Brand Name"
 msgstr ""
 
-#: includes/class-wc-brands.php:347
+#: includes/class-wc-brands.php:340
 msgid "%1$s: "
 msgid_plural "%2$s: "
 msgstr[0] ""
@@ -303,7 +303,7 @@ msgctxt "slug"
 msgid "product"
 msgstr ""
 
-#: includes/class-wc-brands.php:146
+#: includes/class-wc-brands.php:138
 msgctxt "slug"
 msgid "uncategorized"
 msgstr ""

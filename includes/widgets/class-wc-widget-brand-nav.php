@@ -15,7 +15,7 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 	public function __construct() {
 
 		/* Widget variable settings. */
-		$this->widget_cssclass    = 'widget_brand_nav widget_layered_nav';
+		$this->widget_cssclass    = 'woocommerce widget_brand_nav widget_layered_nav';
 		$this->widget_description = __( 'Shows brands in a widget which lets you narrow down the list of products when viewing products.', 'wc_brands' );
 		$this->widget_id          = 'woocommerce_brand_nav';
 		$this->widget_name        = __('WooCommerce Brand Layered Nav', 'wc_brands' );
@@ -100,9 +100,13 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 			return;
 		}
 
-		$terms = get_terms( $taxonomy, array( 'hide_empty' => '1' ) );
+		// Get only parent terms. Methods will recursively retrieve children.
+		$terms = get_terms( $taxonomy, array(
+			'hide_empty' => '1',
+			'parent'     => 0,
+		) );
 
-		if ( 0 === sizeof( $terms ) ) {
+		if ( empty( $terms ) ) {
 			return;
 		}
 
@@ -259,20 +263,22 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 
 	/**
 	 * Show dropdown layered nav.
-	 * @param  array $terms
+	 * @param  array  $terms
 	 * @param  string $taxonomy
-	 * @param  string $query_type
+	 * @param  int    $depth
 	 * @return bool Will nav display?
 	 */
-	protected function layered_nav_dropdown( $terms, $taxonomy ) {
+	protected function layered_nav_dropdown( $terms, $taxonomy, $depth = 0 ) {
 		$found = false;
 
 		if ( $taxonomy !== $this->get_current_taxonomy() ) {
 			$term_counts        = $this->get_filtered_term_product_counts( wp_list_pluck( $terms, 'term_id' ), $taxonomy );
 			$_chosen_attributes = $this->get_chosen_attributes();
 
-			echo '<select class="wc-brand-dropdown-layered-nav-' . esc_attr( $taxonomy ) . '">';
-			echo '<option value="">' . __( 'Any Brand', 'wc_brands' ) . '</option>';
+			if ( 0 == $depth ) {
+				echo '<select class="wc-brand-dropdown-layered-nav-' . esc_attr( $taxonomy ) . '">';
+				echo '<option value="">' . __( 'Any Brand', 'wc_brands' ) . '</option>';
+			}
 
 			foreach ( $terms as $term ) {
 				// If on a term page, skip that term in widget list
@@ -292,17 +298,29 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 					continue;
 				}
 
-				echo '<option value="' . esc_attr( $term->term_id ) . '" ' . selected( $option_is_set, true, false ) . '>' . esc_html( $term->name ) . '</option>';
+				echo '<option value="' . esc_attr( $term->term_id ) . '" ' . selected( $option_is_set, true, false ) . '>' . str_repeat( '&nbsp;', 2 * $depth ) . esc_html( $term->name ) . '</option>';
+
+				$child_terms = get_terms( $taxonomy, array(
+					'hide_empty' => 1,
+					'parent'     => $term->term_id,
+				) );
+
+				if ( ! empty( $child_terms ) ) {
+					$found |= $this->layered_nav_dropdown( $child_terms, $taxonomy, $depth + 1 );
+				}
+
 			}
 
-			echo '</select>';
+			if ( 0 == $depth ) {
+				echo '</select>';
 
-			wc_enqueue_js( "
-				jQuery( '.wc-brand-dropdown-layered-nav-". esc_js( $taxonomy ) . "' ).change( function() {
-					var slug = jQuery( this ).val();
-					location.href = '" . preg_replace( '%\/page\/[0-9]+%', '', str_replace( array( '&amp;', '%2C' ), array( '&', ',' ), esc_js( add_query_arg( 'filtering', '1', remove_query_arg( array( 'page', 'filter_' . $taxonomy ) ) ) ) ) ) . "&filter_". esc_js( $taxonomy ) . "=' + jQuery( '.wc-brand-dropdown-layered-nav-" . esc_js( $taxonomy ) . "' ).val();
-				});
-			" );
+				wc_enqueue_js( "
+					jQuery( '.wc-brand-dropdown-layered-nav-". esc_js( $taxonomy ) . "' ).change( function() {
+						var slug = jQuery( this ).val();
+						location.href = '" . preg_replace( '%\/page\/[0-9]+%', '', str_replace( array( '&amp;', '%2C' ), array( '&', ',' ), esc_js( add_query_arg( 'filtering', '1', remove_query_arg( array( 'page', 'filter_' . $taxonomy ) ) ) ) ) ) . "&filter_". esc_js( $taxonomy ) . "=' + jQuery( '.wc-brand-dropdown-layered-nav-" . esc_js( $taxonomy ) . "' ).val();
+					});
+				" );
+			}
 		}
 
 		return $found;
@@ -312,12 +330,12 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 	 * Show list based layered nav.
 	 * @param  array $terms
 	 * @param  string $taxonomy
-	 * @param  string $query_type
+	 * @param  int    $depth
 	 * @return bool Will nav display?
 	 */
-	protected function layered_nav_list( $terms, $taxonomy ) {
+	protected function layered_nav_list( $terms, $taxonomy, $depth = 0 ) {
 		// List display
-		echo '<ul class="wc-brand-list-layered-nav-' . esc_attr( $taxonomy ) . '">';
+		echo '<ul class="' . ( 0 == $depth ? '' : 'children ' ) . 'wc-brand-list-layered-nav-' . esc_attr( $taxonomy ) . '">';
 
 		$term_counts        = $this->get_filtered_term_product_counts( wp_list_pluck( $terms, 'term_id' ), $taxonomy );
 		$_chosen_attributes = $this->get_chosen_attributes();
@@ -377,6 +395,15 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 			echo ( $count > 0 || $option_is_set ) ? '</a> ' : '</span> ';
 
 			echo apply_filters( 'woocommerce_layered_nav_count', '<span class="count">(' . absint( $count ) . ')</span>', $count, $term );
+
+			$child_terms = get_terms( $taxonomy, array(
+				'hide_empty' => 1,
+				'parent'     => $term->term_id,
+			) );
+
+			if ( ! empty( $child_terms ) ) {
+				$found |= $this->layered_nav_list( $child_terms, $taxonomy, $depth + 1 );
+			}
 
 			echo '</li>';
 		}
