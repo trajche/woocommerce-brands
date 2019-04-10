@@ -115,7 +115,7 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 		$this->widget_start( $args, $instance );
 
 		if ( 'dropdown' === $display_type ) {
-			$found = $this->layered_nav_dropdown( $terms, $taxonomy  );
+			$found = $this->layered_nav_dropdown( $terms, $taxonomy );
 		} else {
 			$found = $this->layered_nav_list( $terms, $taxonomy );
 		}
@@ -272,7 +272,7 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 		$found = false;
 
 		if ( $taxonomy !== $this->get_current_taxonomy() ) {
-			$term_counts        = $this->get_filtered_term_product_counts( wp_list_pluck( $terms, 'term_id' ), $taxonomy );
+			$term_counts        = $this->get_filtered_term_product_counts( wp_list_pluck( $terms, 'term_id' ), $taxonomy, 'or' );
 			$_chosen_attributes = $this->get_chosen_attributes();
 
 			if ( 0 == $depth ) {
@@ -337,7 +337,7 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 		// List display
 		echo '<ul class="' . ( 0 == $depth ? '' : 'children ' ) . 'wc-brand-list-layered-nav-' . esc_attr( $taxonomy ) . '">';
 
-		$term_counts        = $this->get_filtered_term_product_counts( wp_list_pluck( $terms, 'term_id' ), $taxonomy );
+		$term_counts        = $this->get_filtered_term_product_counts( wp_list_pluck( $terms, 'term_id' ), $taxonomy, 'or' );
 		$_chosen_attributes = $this->get_chosen_attributes();
 		$current_values     = ! empty( $_chosen_attributes ) ? $_chosen_attributes : array();
 		$found              = false;
@@ -428,7 +428,7 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 
 		if ( 'or' === $query_type ) {
 			foreach ( $tax_query as $key => $query ) {
-				if ( $taxonomy === $query['taxonomy'] ) {
+				if ( is_array( $query ) && $taxonomy === $query['taxonomy'] ) {
 					unset( $tax_query[ $key ] );
 				}
 			}

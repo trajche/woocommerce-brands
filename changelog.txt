@@ -1,5 +1,14 @@
 *** Brands Changelog ***
 
+2019-02-13 - version 1.6.7
+* Fix - Attribute filter counts when a brand filter is active in layered navigation.
+
+2019-01-29 - version 1.6.6
+* Fix - Add REST api endpoint back to the v2 space.
+
+2019-01-07 - version 1.6.5
+* Fix - Remove CSS classes from strings that can be translated.
+
 2018-10-29 - version 1.6.4
 * Fix - No hierarchical display of child brands in Layered Nav widget.
 * Enhancement - Add optional category limit to brand_products shortcode.

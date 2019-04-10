@@ -43,7 +43,7 @@ class WC_Brands {
 			add_action( 'woocommerce_archive_description', array( $this, 'brand_description' ) );
 		}
 
-		add_filter( 'loop_shop_post_in', array( $this, 'woocommerce_brands_layered_nav_init' ) );
+		add_filter( 'woocommerce_product_query_tax_query', array( $this, 'update_product_query_tax_query' ), 10, 2 );
 
 		// REST API.
 		add_action( 'rest_api_init', array( $this, 'rest_api_register_routes' ) );
@@ -58,62 +58,32 @@ class WC_Brands {
 		} else {
 			require_once( 'class-wc-brands-coupons-legacy.php' );
 		}
-
 		// Layered nav widget compatibility.
 		add_filter( 'woocommerce_layered_nav_term_html', array( $this, 'woocommerce_brands_update_layered_nav_link' ), 10, 4 );
 	}
 
 	/**
-	 * Layered Nav Init
+	 * Update the main product fetch query to filter by selected brands.
 	 *
-	 * @package 	WooCommerce/Widgets
-	 * @access public
-	 * @return void
+	 * @param array    $tax_query array of current taxonomy filters.
+	 * @param WC_Query $wc_query WC_Query object.
+	 *
+	 * @return array
 	 */
-	public function woocommerce_brands_layered_nav_init( $filtered_posts ) {
-		$_chosen_attributes = WC_Query::get_layered_nav_chosen_attributes();
+	public function update_product_query_tax_query( array $tax_query, WC_Query $wc_query ) {
+		if ( isset( $_GET['filter_product_brand'] ) ) { // WPCS: input var ok, CSRF ok.
+			$brands_filter = array_filter( array_map( 'absint', explode( ',', $_GET['filter_product_brand'] ) ) ); // WPCS: input var ok, CSRF ok, Sanitization ok.
 
-		if ( is_active_widget( false, false, 'woocommerce_brand_nav', true ) && ! is_admin() ) {
-
-			if ( ! empty( $_GET[ 'filter_product_brand' ] ) ) {
-
-				$terms 	= array_map( 'intval', explode( ',', $_GET[ 'filter_product_brand' ] ) );
-
-				if ( ! empty( $terms ) ) {
-					$matched_products = get_posts(
-						array(
-							'post_type'     => 'product',
-							'numberposts'   => -1,
-							'post_status'   => 'publish',
-							'fields'        => 'ids',
-							'no_found_rows' => true,
-							'tax_query'     => array(
-
-								'relation' => 'AND',
-								array(
-									'taxonomy' => 'product_brand',
-									'terms'    => $terms,
-									'field'    => 'id'
-								)
-							)
-						)
-					);
-
-					$filtered_posts = array_merge( $filtered_posts, $matched_products );
-
-					if ( empty( $filtered_posts ) ) {
-						$filtered_posts = $matched_products;
-					} else {
-						$filtered_posts = array_intersect( $filtered_posts, $matched_products );
-					}
-
-				}
-
+			if ( $brands_filter ) {
+				$tax_query[] = array(
+					'taxonomy' => 'product_brand',
+					'terms'    => $brands_filter,
+					'operator' => 'IN',
+				);
 			}
-
 		}
 
-		return (array) $filtered_posts;
+		return $tax_query;
 	}
 
 	/**
@@ -215,7 +185,8 @@ class WC_Brands {
 						'edit_item'         => __( 'Edit Brand', 'wc_brands' ),
 						'update_item'       => __( 'Update Brand', 'wc_brands' ),
 						'add_new_item'      => __( 'Add New Brand', 'wc_brands' ),
-						'new_item_name'     => __( 'New Brand Name', 'wc_brands' )
+						'new_item_name'     => __( 'New Brand Name', 'wc_brands' ),
+						'not_found'         => __( 'No Brands Found', 'wc_brands' ),
 				),
 
 				'show_ui'           => true,
@@ -699,8 +670,20 @@ class WC_Brands {
 
 		require_once( $this->plugin_path() . '/includes/class-wc-brands-rest-api-controller.php' );
 
-		WC()->api->WC_Brands_REST_API_Controller = new WC_Brands_REST_API_Controller();
-		WC()->api->WC_Brands_REST_API_Controller->register_routes();
+		$controllers = array(
+			'WC_Brands_REST_API_Controller',
+		);
+
+		// WooCommerce 3.5 has moved v2 endpoints to legacy classes
+		if ( version_compare( WC_VERSION, '3.5', '>=' ) ) {
+			require_once( $this->plugin_path() . '/includes/class-wc-brands-rest-api-v2-controller.php' );
+			$controllers[] = 'WC_Brands_REST_API_V2_Controller';
+		}
+
+		foreach ( $controllers as $controller ) {
+			WC()->api->$controller = new $controller();
+			WC()->api->$controller->register_routes();
+		}
 	}
 
 	/**

@@ -8,7 +8,7 @@ if ( ! $fluid_columns && in_array( $columns, array( 1, 2, 3, 4, 5, 6 ) ) ) {
 	$wrapper_class = 'columns-' .  $columns;
 }
 ?>
-<ul class="brand-thumbnails <?php esc_attr_e( $wrapper_class ); ?>">
+<ul class="brand-thumbnails <?php echo esc_attr( $wrapper_class ); ?>">
 
 <?php
 	foreach ( array_values( $brands ) as $index => $brand ) :
@@ -20,7 +20,7 @@ if ( ! $fluid_columns && in_array( $columns, array( 1, 2, 3, 4, 5, 6 ) ) ) {
 		}
 		?>
 
-		<li class="<?php esc_attr_e( $class ); ?>">
+		<li class="<?php echo esc_attr( $class ); ?>">
 			<a href="<?php echo esc_url( get_term_link( $brand->slug, 'product_brand' ) ); ?>" title="<?php echo esc_attr( $brand->name ); ?>">
 				<?php echo get_brand_thumbnail_image( $brand ); ?>
 			</a>
