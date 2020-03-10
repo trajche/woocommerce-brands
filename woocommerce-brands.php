@@ -8,14 +8,14 @@
  * Developer: WooCommerce
  * Developer URI: http://woocommerce.com/
  * Requires at least: 3.3.0
- * Tested up to: 5.0
- * Version: 1.6.7
+ * Tested up to: 5.3
+ * Version: 1.6.15
  * Text Domain: wc_brands
  * Domain Path: /languages/
- * WC tested up to: 3.5
+ * WC tested up to: 4.0
  * WC requires at least: 2.6
  *
- * Copyright (c) 2019 WooCommerce
+ * Copyright (c) 2020 WooCommerce
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,136 +31,90 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  *
  * Woo: 18737:8a88c7cbd2f1e73636c331c7a86f818c
+ *
+ * @package woocommerce-brands
  */
 
-if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
+// Plugin init hook.
+add_action( 'plugins_loaded', 'wc_brands_init', 1 );
 
 /**
- * Required functions
+ * Initialize plugin.
  */
-if ( ! function_exists( 'woothemes_queue_update' ) )
-	require_once( 'woo-includes/woo-functions.php' );
+function wc_brands_init() {
 
-/**
- * Plugin updates
- */
-woothemes_queue_update( plugin_basename( __FILE__ ), '8a88c7cbd2f1e73636c331c7a86f818c', '18737' );
+	if ( ! class_exists( 'WooCommerce' ) ) {
+		add_action( 'admin_notices', 'wc_brands_woocommerce_deactivated' );
+		return;
+	}
 
-if ( is_woocommerce_active() ) {
-
-	define( 'WC_BRANDS_VERSION', '1.6.7' );
+	define( 'WC_BRANDS_VERSION', '1.6.15' ); // WRCS: DEFINED_VERSION.
 
 	/**
 	 * Localisation
-	 **/
+	 */
 	load_plugin_textdomain( 'wc_brands', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 
 	/**
 	 * WC_Brands classes
-	 **/
-	require_once( 'includes/class-wc-brands.php' );
+	 */
+	require_once 'includes/class-wc-brands.php';
 
 	if ( is_admin() ) {
-		require_once( 'includes/class-wc-brands-admin.php' );
-		add_filter( 'plugin_action_links_' . plugin_basename(__FILE__), 'plugin_action_links' );
+		require_once 'includes/class-wc-brands-admin.php';
+		add_filter( 'plugin_action_links_' . plugin_basename( __FILE__ ), 'wc_brands_plugin_action_links' );
 	}
 
-	register_activation_hook( __FILE__, array( 'WC_Brands', 'init_taxonomy' ), 10 );
-	register_activation_hook( __FILE__, 'flush_rewrite_rules', 20 );
+	require_once 'includes/wc-brands-functions.php';
+}
 
-	/**
-	 * Add custom action links on the plugin screen.
-	 *
-	 * @param	mixed $actions Plugin Actions Links
-	 * @return	array
-	 */
-	function plugin_action_links( $actions ) {
+/**
+ * Add custom action links on the plugin screen.
+ *
+ * @param  mixed $actions Plugin Actions Links.
+ * @return array
+ */
+function wc_brands_plugin_action_links( $actions ) {
 
-		$custom_actions = array();
+	$custom_actions = array();
 
-		// documentation url if any
-		$custom_actions['docs'] = sprintf( '<a href="%s">%s</a>', 'https://docs.woocommerce.com/document/wc-brands/', __( 'Docs', 'wc_brands' ) );
+	// Documentation URL.
+	$custom_actions['docs'] = sprintf( '<a href="%s">%s</a>', 'https://docs.woocommerce.com/document/wc-brands/', __( 'Docs', 'wc_brands' ) );
 
-		// support url
-		$custom_actions['support'] = sprintf( '<a href="%s">%s</a>', 'https://support.woocommerce.com/', __( 'Support', 'wc_brands' ) );
+	// Support URL.
+	$custom_actions['support'] = sprintf( '<a href="%s">%s</a>', 'https://support.woocommerce.com/', __( 'Support', 'wc_brands' ) );
 
-		// changelog link
-		$custom_actions['changelog'] = sprintf( '<a href="%s" target="_blank">%s</a>', 'https://www.woocommerce.com/changelogs/woocommerce-brands/changelog.txt', __( 'Changelog', 'wc_brands' ) );
+	// Changelog link.
+	$custom_actions['changelog'] = sprintf( '<a href="%s" target="_blank">%s</a>', 'https://woocommerce.com/changelogs/woocommerce-brands/changelog.txt', __( 'Changelog', 'wc_brands' ) );
 
-		// add the links to the front of the actions list
-		return array_merge( $custom_actions, $actions );
-	}
+	// Add the links to the front of the actions list.
+	return array_merge( $custom_actions, $actions );
+}
 
-	/**
-	 * Helper function :: get_brand_thumbnail_url function.
-	 *
-	 * @access public
-	 * @return string
-	 */
-	function get_brand_thumbnail_url( $brand_id, $size = 'full' ) {
-		$thumbnail_id = get_woocommerce_term_meta( $brand_id, 'thumbnail_id', true );
+/**
+ * WooCommerce Deactivated Notice.
+ */
+function wc_brands_woocommerce_deactivated() {
+	/* translators: %s: WooCommerce link */
+	echo '<div class="error"><p>' . sprintf( esc_html__( 'WooCommerce Brands requires %s to be installed and active.', 'wc_brands' ), '<a href="https://woocommerce.com/" target="_blank">WooCommerce</a>' ) . '</p></div>';
+}
 
-		if ( $thumbnail_id )
-			$thumb_src = wp_get_attachment_image_src( $thumbnail_id, $size );
-			if ( ! empty( $thumb_src ) ) {
-				return current( $thumb_src );
-			}
-	}
+/**
+ * Activation hooks.
+ */
+register_activation_hook( __FILE__, 'wc_brands_activate', 10 );
+register_activation_hook( __FILE__, 'flush_rewrite_rules', 20 );
 
-	/**
-	 * Helper function :: get_brand_thumbnail_image function.
-	 *
-	 * @since 1.5.0
-	 *
-	 * @access public
-	 * @return string
-	 */
-	function get_brand_thumbnail_image( $brand, $size = '' ) {
-		$thumbnail_id = get_woocommerce_term_meta( $brand->term_id, 'thumbnail_id', true );
-
-		if ( '' === $size || 'brand-thumb' === $size ) {
-			$size = apply_filters( 'woocommerce_brand_thumbnail_size', 'shop_catalog' );
-		}
-
-		if ( $thumbnail_id ) {
-			$image_src    = wp_get_attachment_image_src( $thumbnail_id, $size );
-			$image_src    = $image_src[0];
-			$dimensions   = wc_get_image_size( $size );
-			$image_srcset = function_exists( 'wp_get_attachment_image_srcset' ) ? wp_get_attachment_image_srcset( $thumbnail_id, $size ) : false;
-			$image_sizes  = function_exists( 'wp_get_attachment_image_sizes' ) ? wp_get_attachment_image_sizes( $thumbnail_id, $size ) : false;
-		} else {
-			$image_src    = wc_placeholder_img_src();
-			$dimensions   = wc_get_image_size( $size );
-			$image_srcset = $image_sizes = false;
-		}
-
-		// Add responsive image markup if available
-		if ( $image_srcset && $image_sizes ) {
-			$image = '<img src="' . esc_url( $image_src ) . '" alt="' . esc_attr( $brand->name ) . '" class="brand-thumbnail" width="' . esc_attr( $dimensions['width'] ) . '" height="' . esc_attr( $dimensions['height'] ) . '" srcset="' . esc_attr( $image_srcset ) . '" sizes="' . esc_attr( $image_sizes ) . '" />';
-		} else {
-			$image = '<img src="' . esc_url( $image_src ) . '" alt="' . esc_attr( $brand->name ) . '" class="brand-thumbnail" width="' . esc_attr( $dimensions['width'] ) . '" height="' . esc_attr( $dimensions['height'] ) . '" />';
-		}
-
-		return $image;
-	}
-
-	/**
-	 * get_brands function.
-	 *
-	 * @access public
-	 * @param int $post_id (default: 0)
-	 * @param string $sep (default: ')
-	 * @param mixed '
-	 * @param string $before (default: '')
-	 * @param string $after (default: '')
-	 * @return void
-	 */
-	function get_brands( $post_id = 0, $sep = ', ', $before = '', $after = '' ) {
-		global $post;
-
-		if ( ! $post_id )
-			$post_id = $post->ID;
-
-		return get_the_term_list( $post_id, 'product_brand', $before, $sep, $after );
+/**
+ * Register taxonomy upon activation so we can flush rewrite rules and prevent a 404.
+ */
+function wc_brands_activate() {
+	if ( class_exists( 'WooCommerce' ) ) {
+		require_once 'includes/class-wc-brands.php';
+		WC_Brands::init_taxonomy();
 	}
 }

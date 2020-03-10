@@ -14,7 +14,7 @@ class WC_Brands {
 	public function __construct() {
 		$this->template_url = apply_filters( 'woocommerce_template_url', 'woocommerce/' );
 
-		add_action( 'woocommerce_loaded', array( $this, 'register_hooks' ) );
+		add_action( 'plugins_loaded', array( $this, 'register_hooks' ), 2 );
 
 		$this->register_shortcodes();
 	}
@@ -52,6 +52,9 @@ class WC_Brands {
 		add_filter( 'woocommerce_rest_prepare_product_object', array( $this, 'rest_api_prepare_brands_to_product' ), 10, 2 ); // WC 3.x
 		add_action( 'woocommerce_rest_insert_product', array( $this, 'rest_api_add_brands_to_product' ), 10, 3 ); // WC 2.6.x
 		add_action( 'woocommerce_rest_insert_product_object', array( $this, 'rest_api_add_brands_to_product' ), 10, 3 ); // WC 3.x
+		add_filter( 'woocommerce_rest_product_object_query', array( $this, 'rest_api_filter_products_by_brand' ), 10, 2 );
+		add_filter( 'rest_product_collection_params', array( $this, 'rest_api_product_collection_params' ), 10, 2 );
+
 
 		if ( version_compare( WC_VERSION, '3.2', '>=' ) ) {
 			require_once( 'class-wc-brands-coupons.php' );
@@ -60,6 +63,41 @@ class WC_Brands {
 		}
 		// Layered nav widget compatibility.
 		add_filter( 'woocommerce_layered_nav_term_html', array( $this, 'woocommerce_brands_update_layered_nav_link' ), 10, 4 );
+	}
+
+	/**
+	 * Gets a term meta. Compatibility function for WC 3.6.
+	 *
+	 * @since 1.6.8
+	 * @param int    $term_id Term ID.
+	 * @param string $key     Meta key.
+	 * @param bool   $single  Whether to return a single value. (default: true).
+	 * @return mixed
+	 */
+	public static function get_term_meta( $term_id, $key, $single = true ) {
+		if ( version_compare( WC_VERSION, '3.6', 'ge' ) ) {
+			return get_term_meta( $term_id, $key, $single );
+		} else {
+			return get_woocommerce_term_meta( $term_id, $key, $single );
+		}
+	}
+
+	/**
+	 *
+	 * Updates a term meta. Compatibility function for WC 3.6.
+	 *
+	 * @since 1.6.8
+	 * @param int    $term_id    Term ID.
+	 * @param string $meta_key   Meta key.
+	 * @param mixed  $meta_value Meta value.
+	 * @return bool
+	 */
+	public static function update_term_meta( $term_id, $meta_key, $meta_value ) {
+		if ( version_compare( WC_VERSION, '3.6', 'ge' ) ) {
+			return update_term_meta( $term_id, $meta_key, $meta_value );
+		} else {
+			return update_woocommerce_term_meta( $term_id, $meta_key, $meta_value );
+		}
 	}
 
 	/**
@@ -199,7 +237,7 @@ class WC_Brands {
 					'assign_terms' => 'assign_product_terms'
 				),
 
-				'rewrite' => array( 
+				'rewrite' => array(
 					'slug'         => $slug,
 					'with_front'   => false,
 					'hierarchical' => true
@@ -351,7 +389,7 @@ class WC_Brands {
 	public function product_loop( $query_args, $atts, $loop_name ) {
 		global $woocommerce_loop;
 
-		$products                    = new WP_Query( apply_filters( 'woocommerce_shortcode_products_query', $query_args, $atts, $loop_name ) );
+		$products                    = new WP_Query( apply_filters( 'woocommerce_shortcode_products_query', $query_args, $atts, 'products' ) );
 		$columns                     = absint( $atts['columns'] );
 		$woocommerce_loop['columns'] = $columns;
 
@@ -750,6 +788,48 @@ class WC_Brands {
 			$brands = array_map( 'absint', $brands );
 			wp_set_object_terms( $product_id, $brands, 'product_brand' );
 		}
+	}
+
+	/**
+	 * Filters products by taxonomy product_brand.
+	 *
+	 * @param array           $args    Request args.
+	 * @param WP_REST_Request $request Request data.
+	 * @return array Request args.
+	 * @since 1.6.9
+	 * @version 1.6.9
+	 */
+	public function rest_api_filter_products_by_brand( $args, $request ) {
+
+		if ( ! empty( $request['brand'] ) ) {
+			$args['tax_query'][] = array(
+				'taxonomy' => 'product_brand',
+				'field'    => 'term_id',
+				'terms'    => $request['brand'],
+			);
+		}
+
+		return $args;
+	}
+
+	/**
+	 * Documents additional query params for collections of products.
+	 *
+	 * @param array        $params JSON Schema-formatted collection parameters.
+	 * @param WP_Post_Type $post_type   Post type object.
+	 * @return array JSON Schema-formatted collection parameters.
+	 * @since 1.6.9
+	 * @version 1.6.9
+	 */
+	public function rest_api_product_collection_params( $params, $post_type ) {
+		$params['brand']       = array(
+			'description'       => __( 'Limit result set to products assigned a specific brand ID.', 'woocommerce' ),
+			'type'              => 'string',
+			'sanitize_callback' => 'wp_parse_id_list',
+			'validate_callback' => 'rest_validate_request_arg',
+		);
+
+		return $params;
 	}
 
 	/**

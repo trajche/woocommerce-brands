@@ -1,21 +1,22 @@
-# Copyright (C) 2019 WooCommerce Brands
+# Copyright (C) 2020 WooCommerce
 # This file is distributed under the same license as the WooCommerce Brands package.
 msgid ""
 msgstr ""
-"Project-Id-Version: WooCommerce Brands 1.6.6\n"
-"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/woocommerce-"
-"brands\n"
-"POT-Creation-Date: 2019-02-13 10:10:06+00:00\n"
+"Project-Id-Version: WooCommerce Brands 1.6.15\n"
+"Report-Msgid-Bugs-To: "
+"https://wordpress.org/support/plugin/woocommerce-brands\n"
+"POT-Creation-Date: 2020-03-04 17:32:45+00:00\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"PO-Revision-Date: 2019-MO-DA HO:MI+ZONE\n"
+"PO-Revision-Date: 2020-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
+"X-Generator: node-wp-i18n 1.2.3\n"
 
 #: includes/class-wc-brands-admin.php:31 includes/class-wc-brands-admin.php:532
-#: includes/class-wc-brands-admin.php:543 includes/class-wc-brands.php:206
-#: includes/class-wc-brands.php:208
+#: includes/class-wc-brands-admin.php:543 includes/class-wc-brands.php:215
+#: includes/class-wc-brands.php:217
 #: includes/widgets/class-wc-widget-brand-nav.php:150
 msgid "Brands"
 msgstr ""
@@ -31,7 +32,8 @@ msgstr ""
 #: includes/class-wc-brands-admin.php:118
 msgid ""
 "A product must be associated with this brand for the coupon to remain valid "
-"or, for \"Product Discounts\", products with these brands will be discounted."
+"or, for \"Product Discounts\", products with these brands will be "
+"discounted."
 msgstr ""
 
 #: includes/class-wc-brands-admin.php:123
@@ -107,75 +109,64 @@ msgstr ""
 msgid "Product brand base"
 msgstr ""
 
-#: includes/class-wc-brands-admin.php:494
-msgctxt "slug"
-msgid "brand"
-msgstr ""
-
-#: includes/class-wc-brands-admin.php:519
-msgctxt "slug"
-msgid "product"
-msgstr ""
-
 #: includes/class-wc-brands-coupons-legacy.php:191
 #: includes/class-wc-brands-coupons.php:149
 msgid "Sorry, this coupon is not applicable to the brands: %s."
 msgstr ""
 
-#: includes/class-wc-brands.php:140
-msgctxt "slug"
-msgid "uncategorized"
-msgstr ""
-
-#: includes/class-wc-brands.php:191 includes/class-wc-brands.php:198
+#: includes/class-wc-brands.php:200 includes/class-wc-brands.php:207
 msgid "brand"
 msgstr ""
 
-#: includes/class-wc-brands.php:209
+#: includes/class-wc-brands.php:218
 msgid "Brand"
 msgstr ""
 
-#: includes/class-wc-brands.php:210
+#: includes/class-wc-brands.php:219
 msgid "Search Brands"
 msgstr ""
 
-#: includes/class-wc-brands.php:211
+#: includes/class-wc-brands.php:220
 msgid "All Brands"
 msgstr ""
 
-#: includes/class-wc-brands.php:212
+#: includes/class-wc-brands.php:221
 msgid "Parent Brand"
 msgstr ""
 
-#: includes/class-wc-brands.php:213
+#: includes/class-wc-brands.php:222
 msgid "Parent Brand:"
 msgstr ""
 
-#: includes/class-wc-brands.php:214
+#: includes/class-wc-brands.php:223
 msgid "Edit Brand"
 msgstr ""
 
-#: includes/class-wc-brands.php:215
+#: includes/class-wc-brands.php:224
 msgid "Update Brand"
 msgstr ""
 
-#: includes/class-wc-brands.php:216
+#: includes/class-wc-brands.php:225
 msgid "Add New Brand"
 msgstr ""
 
-#: includes/class-wc-brands.php:217
+#: includes/class-wc-brands.php:226
 msgid "New Brand Name"
 msgstr ""
 
-#: includes/class-wc-brands.php:218
+#: includes/class-wc-brands.php:227
 msgid "No Brands Found"
 msgstr ""
 
-#: includes/class-wc-brands.php:343
+#: includes/class-wc-brands.php:352
 msgid "%1$s: "
 msgid_plural "%2$s: "
 msgstr[0] ""
 msgstr[1] ""
+
+#: includes/class-wc-brands.php:826
+msgid "Limit result set to products assigned a specific brand ID."
+msgstr ""
 
 #: includes/widgets/class-wc-widget-brand-description.php:24
 msgid "WooCommerce Brand Description"
@@ -277,16 +268,21 @@ msgstr ""
 msgid "&uarr; Top"
 msgstr ""
 
-#: woocommerce-brands.php:82
+#: woocommerce-brands.php:86
 msgid "Docs"
 msgstr ""
 
-#: woocommerce-brands.php:85
+#: woocommerce-brands.php:89
 msgid "Support"
 msgstr ""
 
-#: woocommerce-brands.php:88
+#: woocommerce-brands.php:92
 msgid "Changelog"
+msgstr ""
+
+#: woocommerce-brands.php:103
+#. translators: %s: WooCommerce link
+msgid "WooCommerce Brands requires %s to be installed and active."
 msgstr ""
 
 #. Plugin Name of the plugin/theme
@@ -309,4 +305,19 @@ msgstr ""
 
 #. Author URI of the plugin/theme
 msgid "https://woocommerce.com/"
+msgstr ""
+
+#: includes/class-wc-brands-admin.php:494
+msgctxt "slug"
+msgid "brand"
+msgstr ""
+
+#: includes/class-wc-brands-admin.php:519
+msgctxt "slug"
+msgid "product"
+msgstr ""
+
+#: includes/class-wc-brands.php:149
+msgctxt "slug"
+msgid "uncategorized"
 msgstr ""
