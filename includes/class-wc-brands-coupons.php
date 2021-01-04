@@ -33,6 +33,10 @@ class WC_Brands_Coupons {
 	 * @return bool     $valid  True if coupon is valid, otherwise Exception will be thrown
 	 */
 	public function is_coupon_valid( $valid, $coupon, $discounts = null ) {
+		if (WC()->cart == null) {
+                    return $valid;
+                }
+
 		$this->set_brand_settings_on_coupon( $coupon );
 
 		// Only check if coupon still valid and the coupon has brand restrictions on it.
