@@ -7,13 +7,13 @@
  * Author URI: https://woocommerce.com/
  * Developer: WooCommerce
  * Developer URI: http://woocommerce.com/
- * Requires at least: 3.3.0
- * Tested up to: 5.3
- * Version: 1.6.15
+ * Requires at least: 4.4
+ * Tested up to: 5.6.1
+ * Version: 1.6.24
  * Text Domain: wc_brands
  * Domain Path: /languages/
- * WC tested up to: 4.0
- * WC requires at least: 2.6
+ * WC tested up to: 5.0
+ * WC requires at least: 3.2
  *
  * Copyright (c) 2020 WooCommerce
  *
@@ -42,6 +42,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 // Plugin init hook.
 add_action( 'plugins_loaded', 'wc_brands_init', 1 );
 
+// Automatic translations.
+add_filter( 'woocommerce_translations_updates_for_woocommerce-brands', '__return_true' );
+
 /**
  * Initialize plugin.
  */
@@ -52,7 +55,7 @@ function wc_brands_init() {
 		return;
 	}
 
-	define( 'WC_BRANDS_VERSION', '1.6.15' ); // WRCS: DEFINED_VERSION.
+	define( 'WC_BRANDS_VERSION', '1.6.24' ); // WRCS: DEFINED_VERSION.
 
 	/**
 	 * Localisation

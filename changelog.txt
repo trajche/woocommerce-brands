@@ -1,5 +1,37 @@
 *** Brands Changelog ***
 
+2021-02-04 - version 1.6.24
+* Tweak - WC 5.0 compatibility.
+* Tweak - WordPress 5.6.1 compatibility.
+
+2020-12-15 - version 1.6.23
+* New Minimum Requirements - WordPress 4.4, WooCommerce 3.2
+* Fix - Allow pagination and limit for the brand products shortcode.
+
+2020-12-01 - version 1.6.22
+* Tweak - WC 4.7 compatibility.
+* Tweak - WordPress 5.6 compatibility.
+
+2020-11-06 - version 1.6.21
+* Tweak - Replace deprecated function use when WC 3.3+ is active.
+
+2020-10-08 - version 1.6.20
+* Tweak - Validate coupons only if there are items in the cart.
+* Tweak - WC 4.5 compatibility.
+* Tweak - Enable automatic translations.
+
+2020-08-19 - version 1.6.19
+* Tweak - WordPress 5.5 compatibility.
+
+2020-06-10 - version 1.6.18
+* Tweak - WC 4.2 compatibility.
+
+2020-05-05 - version 1.6.17
+* Fix - Sort brands in shortcode list by brand name instead of slug.
+
+2020-04-29 - version 1.6.16
+* Tweak - WC 4.1 compatibility.
+
 2020-03-04 - version 1.6.15
 * Tweak - WC 4.0 compatibility.
 
