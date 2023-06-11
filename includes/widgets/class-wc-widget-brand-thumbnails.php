@@ -8,7 +8,6 @@
  * @category	Widgets
  * @author		WooThemes
  */
-
 class WC_Widget_Brand_Thumbnails extends WP_Widget {
 
 	/** Variables to setup the widget. */
@@ -21,8 +20,8 @@ class WC_Widget_Brand_Thumbnails extends WP_Widget {
 	public function __construct() {
 
 		/* Widget variable settings. */
-		$this->woo_widget_name        = __('WooCommerce Brand Thumbnails', 'wc_brands' );
-		$this->woo_widget_description = __( 'Show a grid of brand thumbnails.', 'wc_brands' );
+		$this->woo_widget_name        = __('WooCommerce Brand Thumbnails', 'woocommerce-brands' );
+		$this->woo_widget_description = __( 'Show a grid of brand thumbnails.', 'woocommerce-brands' );
 		$this->woo_widget_idbase      = 'wc_brands_brand_thumbnails';
 		$this->woo_widget_cssclass    = 'widget_brand_thumbnails';
 
@@ -33,14 +32,41 @@ class WC_Widget_Brand_Thumbnails extends WP_Widget {
 		parent::__construct( $this->woo_widget_idbase, $this->woo_widget_name, $widget_ops );
 	}
 
-	/** @see WP_Widget */
+	/**
+	 * Echoes the widget content.
+	 *
+	 * @see WP_Widget
+	 *
+	 * @param array $args     Display arguments including 'before_title', 'after_title',
+	 *                        'before_widget', and 'after_widget'.
+	 * @param array $instance The settings for the particular instance of the widget.
+	 */
 	public function widget( $args, $instance ) {
-		extract( $args );
+		$instance = wp_parse_args(
+			$instance,
+			array(
+				'title'      => '',
+				'columns'    => 1,
+				'exclude'    => '',
+				'orderby'    => 'name',
+				'hide_empty' => 0,
+				'number'     => '',
+			)
+		);
 
 		$exclude = array_map( 'intval', explode( ',', $instance['exclude'] ) );
-		$order = $instance['orderby'] == 'name' ? 'asc' : 'desc';
+		$order   = 'name' === $instance['orderby'] ? 'asc' : 'desc';
 
-		$brands = get_terms( 'product_brand', array( 'hide_empty' => $instance['hide_empty'], 'orderby' => $instance['orderby'], 'exclude' => $exclude, 'number' => $instance['number'], 'order' => $order ) );
+		$brands = get_terms(
+			'product_brand',
+			array(
+				'hide_empty' => $instance['hide_empty'],
+				'orderby'    => $instance['orderby'],
+				'exclude'    => $exclude,
+				'number'     => $instance['number'],
+				'order'      => $order,
+			)
+		);
 
 		if ( ! $brands ) {
 			return;
@@ -48,9 +74,9 @@ class WC_Widget_Brand_Thumbnails extends WP_Widget {
 
 		$title = apply_filters( 'widget_title', $instance['title'], $instance, $this->woo_widget_idbase );
 
-		echo $args['before_widget'];
+		echo $args['before_widget']; // phpcs:ignore WordPress.Security.EscapeOutput
 		if ( $title !== '' ) {
-			echo $args['before_title'] . $title . $args['after_title'];
+			echo $args['before_title'] . $title . $args['after_title']; // phpcs:ignore WordPress.Security.EscapeOutput
 		}
 
 		wc_get_template( 'widgets/brand-thumbnails.php', array(
@@ -59,7 +85,7 @@ class WC_Widget_Brand_Thumbnails extends WP_Widget {
 			'fluid_columns' => ! empty( $instance['fluid_columns'] ) ? true : false,
 		), 'woocommerce-brands', untrailingslashit( plugin_dir_path( dirname( dirname( __FILE__ ) ) ) ) . '/templates/' );
 
-		echo $after_widget;
+		echo $args['after_widget']; // phpcs:ignore WordPress.Security.EscapeOutput
 	}
 
 	/** @see WP_Widget->update */
@@ -95,7 +121,11 @@ class WC_Widget_Brand_Thumbnails extends WP_Widget {
 		return $instance;
 	}
 
-	/** @see WP_Widget->form */
+	/**
+	 * Outputs the settings update form.
+	 *
+	 * @param array $instance Current settings.
+	 */
 	public function form( $instance ) {
 		if ( ! isset( $instance['hide_empty'] ) ) {
 			$instance['hide_empty'] = 0;
@@ -111,43 +141,43 @@ class WC_Widget_Brand_Thumbnails extends WP_Widget {
 
 		?>
 			<p>
-				<label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e('Title:', 'wc_brands') ?></label>
+				<label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"><?php esc_html_e( 'Title:', 'woocommerce-brands' ); ?></label>
 				<input type="text" class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'title' ) ); ?>" value="<?php if ( isset ( $instance['title'] ) ) echo esc_attr( $instance['title'] ); ?>" />
 			</p>
 
 			<p>
-				<label for="<?php echo $this->get_field_id( 'columns' ); ?>"><?php _e('Columns:', 'wc_brands') ?></label>
+				<label for="<?php echo esc_attr( $this->get_field_id( 'columns' ) ); ?>"><?php esc_html_e( 'Columns:', 'woocommerce-brands' ); ?></label>
 				<input type="text" class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'columns' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'columns' ) ); ?>" value="<?php if ( isset ( $instance['columns'] ) ) echo esc_attr( $instance['columns'] ); else echo '1'; ?>" />
 			</p>
 
 			<p>
-				<label for="<?php echo $this->get_field_id( 'fluid_columns' ); ?>"><?php _e('Fluid columns:', 'wc_brands') ?></label>
+				<label for="<?php echo esc_attr( $this->get_field_id( 'fluid_columns' ) ); ?>"><?php esc_html_e( 'Fluid columns:', 'woocommerce-brands' ); ?></label>
 				<input type="checkbox" <?php checked( $instance['fluid_columns'] ); ?> id="<?php echo esc_attr( $this->get_field_id( 'fluid_columns' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'fluid_columns' ) ); ?>" />
 			</p>
 
 			<p>
-				<label for="<?php echo $this->get_field_id( 'number' ); ?>"><?php _e('Number:', 'wc_brands') ?></label>
-				<input type="text" class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'number' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'number' ) ); ?>" value="<?php if ( isset ( $instance['number'] ) ) echo esc_attr( $instance['number'] ); ?>" placeholder="<?php _e('All', 'wc_brands'); ?>" />
+				<label for="<?php echo esc_attr( $this->get_field_id( 'number' ) ); ?>"><?php esc_html_e( 'Number:', 'woocommerce-brands' ); ?></label>
+				<input type="text" class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'number' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'number' ) ); ?>" value="<?php if ( isset ( $instance['number'] ) ) { echo esc_attr( $instance['number'] ); } // phpcs:ignore ?>" placeholder="<?php esc_attr_e( 'All', 'woocommerce-brands' ); ?>" />
 			</p>
 
 			<p>
-				<label for="<?php echo $this->get_field_id( 'exclude' ); ?>"><?php _e('Exclude:', 'wc_brands') ?></label>
-				<input type="text" class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'exclude' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'exclude' ) ); ?>" value="<?php if ( isset ( $instance['exclude'] ) ) echo esc_attr( $instance['exclude'] ); ?>" placeholder="<?php _e('None', 'wc_brands'); ?>" />
+				<label for="<?php echo esc_attr( $this->get_field_id( 'exclude' ) ); ?>"><?php esc_html_e( 'Exclude:', 'woocommerce-brands' ); ?></label>
+				<input type="text" class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'exclude' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'exclude' ) ); ?>" value="<?php if ( isset ( $instance['exclude'] ) ) { echo esc_attr( $instance['exclude'] ); } // phpcs:ignore ?>" placeholder="<?php esc_attr_e( 'None', 'woocommerce-brands' ); ?>" />
 			</p>
 
 			<p>
-				<label for="<?php echo $this->get_field_id( 'hide_empty' ); ?>"><?php _e('Hide empty brands:', 'wc_brands') ?></label>
+				<label for="<?php echo esc_attr( $this->get_field_id( 'hide_empty' ) ); ?>"><?php esc_html_e( 'Hide empty brands:', 'woocommerce-brands' ); ?></label>
 				<select id="<?php echo esc_attr( $this->get_field_id( 'hide_empty' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'hide_empty' ) ); ?>">
-					<option value="1" <?php selected( $instance['hide_empty'], 1 ) ?>><?php _e('Yes', 'wc_brands') ?></option>
-					<option value="0" <?php selected( $instance['hide_empty'], 0 ) ?>><?php _e('No', 'wc_brands') ?></option>
+					<option value="1" <?php selected( $instance['hide_empty'], 1 ); ?>><?php esc_html_e( 'Yes', 'woocommerce-brands' ); ?></option>
+					<option value="0" <?php selected( $instance['hide_empty'], 0 ); ?>><?php esc_html_e( 'No', 'woocommerce-brands' ); ?></option>
 				</select>
 			</p>
 
 			<p>
-				<label for="<?php echo $this->get_field_id( 'orderby' ); ?>"><?php _e('Order by:', 'wc_brands') ?></label>
+				<label for="<?php echo esc_attr( $this->get_field_id( 'orderby' ) ); ?>"><?php esc_html_e( 'Order by:', 'woocommerce-brands' ); ?></label>
 				<select id="<?php echo esc_attr( $this->get_field_id( 'orderby' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'orderby' ) ); ?>">
-					<option value="name" <?php selected( $instance['orderby'], 'name' ) ?>><?php _e('Name', 'wc_brands') ?></option>
-					<option value="count" <?php selected( $instance['orderby'], 'count' ) ?>><?php _e('Count', 'wc_brands') ?></option>
+					<option value="name" <?php selected( $instance['orderby'], 'name' ); ?>><?php esc_html_e( 'Name', 'woocommerce-brands' ); ?></option>
+					<option value="count" <?php selected( $instance['orderby'], 'count' ); ?>><?php esc_html_e( 'Count', 'woocommerce-brands' ); ?></option>
 				</select>
 			</p>
 		<?php

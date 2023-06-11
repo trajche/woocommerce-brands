@@ -16,9 +16,9 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 
 		/* Widget variable settings. */
 		$this->widget_cssclass    = 'woocommerce widget_brand_nav widget_layered_nav';
-		$this->widget_description = __( 'Shows brands in a widget which lets you narrow down the list of products when viewing products.', 'wc_brands' );
+		$this->widget_description = __( 'Shows brands in a widget which lets you narrow down the list of products when viewing products.', 'woocommerce-brands' );
 		$this->widget_id          = 'woocommerce_brand_nav';
-		$this->widget_name        = __('WooCommerce Brand Layered Nav', 'wc_brands' );
+		$this->widget_name        = __('WooCommerce Brand Layered Nav', 'woocommerce-brands' );
 
 		add_filter( 'woocommerce_product_subcategories_args', array( $this, 'filter_out_cats' ) );
 
@@ -130,7 +130,7 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 		if ( ! $found ) {
 			ob_end_clean();
 		} else {
-			echo ob_get_clean();
+			echo ob_get_clean(); // phpcs:ignore WordPress.Security.EscapeOutput
 		}
 	}
 
@@ -147,7 +147,7 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 		global $woocommerce;
 
 		if ( empty( $new_instance['title'] ) )
-			$new_instance['title'] = __( 'Brands', 'wc_brands' );
+			$new_instance['title'] = __( 'Brands', 'woocommerce-brands' );
 
 		$instance['title']        = strip_tags( stripslashes( $new_instance['title'] ) );
 		$instance['display_type'] = stripslashes( $new_instance['display_type'] );
@@ -169,19 +169,21 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 		if ( ! isset( $instance['display_type'] ) )
 			$instance['display_type'] = 'list';
 		?>
-		<p><label for="<?php echo $this->get_field_id( 'title' ); ?>"><?php _e( 'Title:', 'wc_brands' ) ?></label>
+		<p><label for="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>"><?php esc_html_e( 'Title:', 'woocommerce-brands' ); ?></label>
 		<input type="text" class="widefat" id="<?php echo esc_attr( $this->get_field_id( 'title' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'title' ) ); ?>" value="<?php if ( isset( $instance['title'] ) ) echo esc_attr( $instance['title'] ); ?>" /></p>
 
-		<p><label for="<?php echo $this->get_field_id( 'display_type' ); ?>"><?php _e( 'Display Type:', 'wc_brands' ) ?></label>
+		<p><label for="<?php echo esc_attr( $this->get_field_id( 'display_type' ) ); ?>"><?php esc_html_e( 'Display Type:', 'woocommerce-brands' ); ?></label>
 		<select id="<?php echo esc_attr( $this->get_field_id( 'display_type' ) ); ?>" name="<?php echo esc_attr( $this->get_field_name( 'display_type' ) ); ?>">
-			<option value="list" <?php selected( $instance['display_type'], 'list' ); ?>><?php _e( 'List', 'wc_brands' ); ?></option>
-			<option value="dropdown" <?php selected( $instance['display_type'], 'dropdown' ); ?>><?php _e( 'Dropdown', 'wc_brands' ); ?></option>
+			<option value="list" <?php selected( $instance['display_type'], 'list' ); ?>><?php esc_html_e( 'List', 'woocommerce-brands' ); ?></option>
+			<option value="dropdown" <?php selected( $instance['display_type'], 'dropdown' ); ?>><?php esc_html_e( 'Dropdown', 'woocommerce-brands' ); ?></option>
 		</select></p>
 		<?php
 	}
 
 	/**
 	 * Get current page URL for layered nav items.
+	 *
+	 * @param  string $taxonomy
 	 * @return string
 	 */
 	protected function get_page_base_url( $taxonomy ) {
@@ -196,19 +198,20 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 		} else {
 			$link = get_term_link( get_query_var( 'term' ), get_query_var( 'taxonomy' ) );
 		}
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
 
 		// Min/Max
 		if ( isset( $_GET['min_price'] ) ) {
-			$link = add_query_arg( 'min_price', wc_clean( $_GET['min_price'] ), $link );
+			$link = add_query_arg( 'min_price', wc_clean( wp_unslash( $_GET['min_price'] ) ), $link );
 		}
 
 		if ( isset( $_GET['max_price'] ) ) {
-			$link = add_query_arg( 'max_price', wc_clean( $_GET['max_price'] ), $link );
+			$link = add_query_arg( 'max_price', wc_clean( wp_unslash( $_GET['max_price'] ) ), $link );
 		}
 
 		// Orderby
 		if ( isset( $_GET['orderby'] ) ) {
-			$link = add_query_arg( 'orderby', wc_clean( $_GET['orderby'] ), $link );
+			$link = add_query_arg( 'orderby', wc_clean( wp_unslash( $_GET['orderby'] ) ), $link );
 		}
 
 		/**
@@ -221,12 +224,12 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 
 		// Post Type Arg
 		if ( isset( $_GET['post_type'] ) ) {
-			$link = add_query_arg( 'post_type', wc_clean( $_GET['post_type'] ), $link );
+			$link = add_query_arg( 'post_type', wc_clean( wp_unslash( $_GET['post_type'] ) ), $link );
 		}
 
 		// Min Rating Arg
 		if ( isset( $_GET['min_rating'] ) ) {
-			$link = add_query_arg( 'min_rating', wc_clean( $_GET['min_rating'] ), $link );
+			$link = add_query_arg( 'min_rating', wc_clean( wp_unslash( $_GET['min_rating'] ) ), $link );
 		}
 
 		// All current filters
@@ -245,7 +248,9 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 			}
 		}
 
-		return $link;
+		// phpcs:enable WordPress.Security.NonceVerification.Recommended
+
+		return esc_url( $link );
 	}
 
 	/**
@@ -255,7 +260,8 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 	 */
 	public function get_chosen_attributes() {
 		if ( ! empty( $_GET['filter_product_brand'] ) ) {
-			return array_map( 'intval', explode( ',', $_GET['filter_product_brand'] ) );
+			$filter_product_brand = wc_clean( wp_unslash( $_GET['filter_product_brand'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return array_map( 'intval', explode( ',', $filter_product_brand ) );
 		}
 
 		return array();
@@ -277,7 +283,7 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 
 			if ( 0 == $depth ) {
 				echo '<select class="wc-brand-dropdown-layered-nav-' . esc_attr( $taxonomy ) . '">';
-				echo '<option value="">' . __( 'Any Brand', 'wc_brands' ) . '</option>';
+				echo '<option value="">' . esc_html__( 'Any Brand', 'woocommerce-brands' ) . '</option>';
 			}
 
 			foreach ( $terms as $term ) {
@@ -298,7 +304,7 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 					continue;
 				}
 
-				echo '<option value="' . esc_attr( $term->term_id ) . '" ' . selected( $option_is_set, true, false ) . '>' . str_repeat( '&nbsp;', 2 * $depth ) . esc_html( $term->name ) . '</option>';
+				echo '<option value="' . esc_attr( $term->term_id ) . '" ' . selected( $option_is_set, true, false ) . '>' . esc_html( str_repeat( '&nbsp;', 2 * $depth ) . $term->name ) . '</option>';
 
 				$child_terms = get_terms( $taxonomy, array(
 					'hide_empty' => 1,
@@ -328,10 +334,11 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 
 	/**
 	 * Show list based layered nav.
-	 * @param  array $terms
+	 *
+	 * @param  array  $terms
 	 * @param  string $taxonomy
 	 * @param  int    $depth
-	 * @return bool Will nav display?
+	 * @return bool   Will nav display?
 	 */
 	protected function layered_nav_list( $terms, $taxonomy, $depth = 0 ) {
 		// List display
@@ -360,7 +367,7 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 				continue;
 			}
 
-			$current_filter = isset( $_GET[ $filter_name ] ) ? explode( ',', wc_clean( $_GET[ $filter_name ] ) ) : array();
+			$current_filter = isset( $_GET[ $filter_name ] ) ? explode( ',', wc_clean( wp_unslash( $_GET[ $filter_name ] ) ) ) : array(); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 			$current_filter = array_map( 'intval', $current_filter );
 
 			if ( ! in_array( $term->term_id, $current_filter ) ) {
@@ -394,7 +401,7 @@ class WC_Widget_Brand_Nav extends WC_Widget {
 
 			echo ( $count > 0 || $option_is_set ) ? '</a> ' : '</span> ';
 
-			echo apply_filters( 'woocommerce_layered_nav_count', '<span class="count">(' . absint( $count ) . ')</span>', $count, $term );
+			echo wp_kses_post( apply_filters( 'woocommerce_layered_nav_count', '<span class="count">(' . absint( $count ) . ')</span>', $count, $term ) );
 
 			$child_terms = get_terms( $taxonomy, array(
 				'hide_empty' => 1,

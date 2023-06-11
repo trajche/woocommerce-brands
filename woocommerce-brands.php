@@ -8,12 +8,12 @@
  * Developer: WooCommerce
  * Developer URI: http://woocommerce.com/
  * Requires at least: 4.4
- * Tested up to: 5.6.1
- * Version: 1.6.24
- * Text Domain: wc_brands
+ * Tested up to: 6.2
+ * Version: 1.6.51
+ * Text Domain: woocommerce-brands
  * Domain Path: /languages/
- * WC tested up to: 5.0
- * WC requires at least: 3.2
+ * WC tested up to: 7.7
+ * WC requires at least: 3.6
  *
  * Copyright (c) 2020 WooCommerce
  *
@@ -35,8 +35,11 @@
  * @package woocommerce-brands
  */
 
+use Automattic\WooCommerce\Utilities\FeaturesUtil;
+
+// Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
-	exit; // Exit if accessed directly.
+	exit;
 }
 
 // Plugin init hook.
@@ -44,6 +47,16 @@ add_action( 'plugins_loaded', 'wc_brands_init', 1 );
 
 // Automatic translations.
 add_filter( 'woocommerce_translations_updates_for_woocommerce-brands', '__return_true' );
+
+// HPOS compatibility declaration.
+add_action(
+	'before_woocommerce_init',
+	function() {
+		if ( class_exists( FeaturesUtil::class ) ) {
+			FeaturesUtil::declare_compatibility( 'custom_order_tables', plugin_basename( __FILE__ ), true );
+		}
+	}
+);
 
 /**
  * Initialize plugin.
@@ -55,12 +68,12 @@ function wc_brands_init() {
 		return;
 	}
 
-	define( 'WC_BRANDS_VERSION', '1.6.24' ); // WRCS: DEFINED_VERSION.
+	define( 'WC_BRANDS_VERSION', '1.6.51' ); // WRCS: DEFINED_VERSION.
 
 	/**
 	 * Localisation
 	 */
-	load_plugin_textdomain( 'wc_brands', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
+	load_plugin_textdomain( 'woocommerce-brands', false, dirname( plugin_basename( __FILE__ ) ) . '/languages/' );
 
 	/**
 	 * WC_Brands classes
@@ -86,13 +99,13 @@ function wc_brands_plugin_action_links( $actions ) {
 	$custom_actions = array();
 
 	// Documentation URL.
-	$custom_actions['docs'] = sprintf( '<a href="%s">%s</a>', 'https://docs.woocommerce.com/document/wc-brands/', __( 'Docs', 'wc_brands' ) );
+	$custom_actions['docs'] = sprintf( '<a href="%s">%s</a>', 'https://docs.woocommerce.com/document/woocommerce-brands/', __( 'Docs', 'woocommerce-brands' ) );
 
 	// Support URL.
-	$custom_actions['support'] = sprintf( '<a href="%s">%s</a>', 'https://support.woocommerce.com/', __( 'Support', 'wc_brands' ) );
+	$custom_actions['support'] = sprintf( '<a href="%s">%s</a>', 'https://support.woocommerce.com/', __( 'Support', 'woocommerce-brands' ) );
 
 	// Changelog link.
-	$custom_actions['changelog'] = sprintf( '<a href="%s" target="_blank">%s</a>', 'https://woocommerce.com/changelogs/woocommerce-brands/changelog.txt', __( 'Changelog', 'wc_brands' ) );
+	$custom_actions['changelog'] = sprintf( '<a href="%s" target="_blank">%s</a>', 'https://woocommerce.com/changelogs/woocommerce-brands/changelog.txt', __( 'Changelog', 'woocommerce-brands' ) );
 
 	// Add the links to the front of the actions list.
 	return array_merge( $custom_actions, $actions );
@@ -103,7 +116,7 @@ function wc_brands_plugin_action_links( $actions ) {
  */
 function wc_brands_woocommerce_deactivated() {
 	/* translators: %s: WooCommerce link */
-	echo '<div class="error"><p>' . sprintf( esc_html__( 'WooCommerce Brands requires %s to be installed and active.', 'wc_brands' ), '<a href="https://woocommerce.com/" target="_blank">WooCommerce</a>' ) . '</p></div>';
+	echo '<div class="error"><p>' . sprintf( esc_html__( 'WooCommerce Brands requires %s to be installed and active.', 'woocommerce-brands' ), '<a href="https://woocommerce.com/" target="_blank">WooCommerce</a>' ) . '</p></div>';
 }
 
 /**
