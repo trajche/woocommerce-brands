@@ -1,19 +1,19 @@
 <?php
 /**
  * Plugin Name: WooCommerce Brands
- * Plugin URI: https://woocommerce.com/products/brands/
+ * Plugin URI: https://woo.com/products/brands/
  * Description: Add brands to your products, as well as widgets and shortcodes for displaying your brands.
  * Author: WooCommerce
- * Author URI: https://woocommerce.com/
+ * Author URI: https://woo.com/
  * Developer: WooCommerce
- * Developer URI: http://woocommerce.com/
- * Requires at least: 4.4
- * Tested up to: 6.2
- * Version: 1.6.51
+ * Developer URI: http://woo.com/
+ * Requires at least: 5.4
+ * Tested up to: 6.4
+ * Version: 1.6.62
  * Text Domain: woocommerce-brands
  * Domain Path: /languages/
- * WC tested up to: 7.7
- * WC requires at least: 3.6
+ * WC tested up to: 8.3
+ * WC requires at least: 4.6
  *
  * Copyright (c) 2020 WooCommerce
  *
@@ -36,6 +36,9 @@
  */
 
 use Automattic\WooCommerce\Utilities\FeaturesUtil;
+use Automattic\WooCommerce\Admin\BlockTemplates\BlockTemplateInterface;
+use Automattic\WooCommerce\Admin\Features\ProductBlockEditor\ProductTemplates\ProductFormTemplateInterface;
+
 
 // Exit if accessed directly.
 if ( ! defined( 'ABSPATH' ) ) {
@@ -48,12 +51,13 @@ add_action( 'plugins_loaded', 'wc_brands_init', 1 );
 // Automatic translations.
 add_filter( 'woocommerce_translations_updates_for_woocommerce-brands', '__return_true' );
 
-// HPOS compatibility declaration.
+// HPOS and new product editor compatibility declaration.
 add_action(
 	'before_woocommerce_init',
 	function() {
 		if ( class_exists( FeaturesUtil::class ) ) {
-			FeaturesUtil::declare_compatibility( 'custom_order_tables', plugin_basename( __FILE__ ), true );
+			FeaturesUtil::declare_compatibility( 'custom_order_tables', plugin_basename( __FILE__ ) );
+			FeaturesUtil::declare_compatibility( 'product_block_editor', plugin_basename( __FILE__ ) );
 		}
 	}
 );
@@ -62,13 +66,12 @@ add_action(
  * Initialize plugin.
  */
 function wc_brands_init() {
-
 	if ( ! class_exists( 'WooCommerce' ) ) {
 		add_action( 'admin_notices', 'wc_brands_woocommerce_deactivated' );
 		return;
 	}
 
-	define( 'WC_BRANDS_VERSION', '1.6.51' ); // WRCS: DEFINED_VERSION.
+	define( 'WC_BRANDS_VERSION', '1.6.62' ); // WRCS: DEFINED_VERSION.
 
 	/**
 	 * Localisation
@@ -95,17 +98,16 @@ function wc_brands_init() {
  * @return array
  */
 function wc_brands_plugin_action_links( $actions ) {
-
 	$custom_actions = array();
 
 	// Documentation URL.
-	$custom_actions['docs'] = sprintf( '<a href="%s">%s</a>', 'https://docs.woocommerce.com/document/woocommerce-brands/', __( 'Docs', 'woocommerce-brands' ) );
+	$custom_actions['docs'] = sprintf( '<a href="%s">%s</a>', 'https://woo.com/document/woocommerce-brands/', __( 'Docs', 'woocommerce-brands' ) );
 
 	// Support URL.
-	$custom_actions['support'] = sprintf( '<a href="%s">%s</a>', 'https://support.woocommerce.com/', __( 'Support', 'woocommerce-brands' ) );
+	$custom_actions['support'] = sprintf( '<a href="%s">%s</a>', 'https://woo.com/contact-us/', __( 'Support', 'woocommerce-brands' ) );
 
 	// Changelog link.
-	$custom_actions['changelog'] = sprintf( '<a href="%s" target="_blank">%s</a>', 'https://woocommerce.com/changelogs/woocommerce-brands/changelog.txt', __( 'Changelog', 'woocommerce-brands' ) );
+	$custom_actions['changelog'] = sprintf( '<a href="%s" target="_blank">%s</a>', 'https://woo.com/changelogs/woocommerce-brands/changelog.txt', __( 'Changelog', 'woocommerce-brands' ) );
 
 	// Add the links to the front of the actions list.
 	return array_merge( $custom_actions, $actions );
@@ -116,7 +118,7 @@ function wc_brands_plugin_action_links( $actions ) {
  */
 function wc_brands_woocommerce_deactivated() {
 	/* translators: %s: WooCommerce link */
-	echo '<div class="error"><p>' . sprintf( esc_html__( 'WooCommerce Brands requires %s to be installed and active.', 'woocommerce-brands' ), '<a href="https://woocommerce.com/" target="_blank">WooCommerce</a>' ) . '</p></div>';
+	echo '<div class="error"><p>' . sprintf( esc_html__( 'WooCommerce Brands requires %s to be installed and active.', 'woocommerce-brands' ), '<a href="https://woo.com/" target="_blank">WooCommerce</a>' ) . '</p></div>';
 }
 
 /**
@@ -133,4 +135,31 @@ function wc_brands_activate() {
 		require_once 'includes/class-wc-brands.php';
 		WC_Brands::init_taxonomy();
 	}
+}
+
+if ( ! function_exists( 'wc_brands_on_block_template_register' ) ) {
+	/**
+	 * Add a new block to the template.
+	 */
+	function wc_brands_on_block_template_register( BlockTemplateInterface $template ) {
+		if ( $template instanceof ProductFormTemplateInterface && 'simple-product' === $template->get_id() ) {
+			$section = $template->get_section_by_id( 'product-catalog-section' );
+			if ( $section !== null ) {
+				$section->add_block(
+					[
+						'id'         => 'woocommerce-brands-select',
+						'blockName'  => 'woocommerce/product-taxonomy-field',
+						'order'      => 15,
+						'attributes' => [
+							'label'       => __( 'Brands', 'woocommerce-brands' ),
+							'createTitle' => __( 'Create new brand', 'woocommerce-brands' ),
+							'slug'        => 'product_brand',
+							'property'    => 'brands',
+						],
+					]
+				);
+			}
+		}
+	}
+	add_action( 'woocommerce_block_template_register', 'wc_brands_on_block_template_register' );
 }

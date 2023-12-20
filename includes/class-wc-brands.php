@@ -70,9 +70,63 @@ class WC_Brands {
 		require_once( 'class-wc-brands-coupons.php' );
 		// Layered nav widget compatibility.
 		add_filter( 'woocommerce_layered_nav_term_html', array( $this, 'woocommerce_brands_update_layered_nav_link' ), 10, 4 );
+
+		// Filter the list of taxonomies overridden for the original term count.
+		add_filter( 'woocommerce_change_term_counts', array( $this, 'add_brands_to_terms' ) );
+		add_action( 'woocommerce_product_set_stock_status', array( $this, 'recount_after_stock_change' ) );
+		add_action( 'woocommerce_update_options_products_inventory', array( $this, 'recount_all_brands' ) );
 	}
 
 	/**
+	 * Add product_brand to the taxonomies overridden for the original term count.
+	 *
+	 * @param array $taxonomies List of taxonomies.
+	 *
+	 * @return array
+	 */
+	public function add_brands_to_terms( $taxonomies ) {
+		$taxonomies[] = 'product_brand';
+		return $taxonomies;
+	}
+
+	/**
+	 * Recount the brands after the stock amount changes.
+	 *
+	 * @param int $product_id Product ID.
+	 */
+	public function recount_after_stock_change( $product_id ) {
+		if ( 'yes' !== get_option( 'woocommerce_hide_out_of_stock_items' ) || empty( $product_id ) ) {
+			return;
+		}
+
+		$product_terms = get_the_terms( $product_id, 'product_brand' );
+
+		if ( $product_terms ) {
+			$product_brands = array();
+
+			foreach ( $product_terms as $term ) {
+				$product_brands[ $term->term_id ] = $term->parent;
+			}
+
+			_wc_term_recount( $product_brands, get_taxonomy( 'product_brand' ), false, false );
+		}
+	}
+
+	/**
+	 * Recount all brands.
+	 */
+	public function recount_all_brands() {
+		$product_brands = get_terms(
+			'product_brand',
+			array(
+				'hide_empty' => false,
+				'fields'     => 'id=>parent',
+			)
+		);
+		_wc_term_recount( $product_brands, get_taxonomy( 'product_brand' ), true, false );
+	}
+
+	 /**
 	 * Check if a theme is FSE
 	 * @return bool If the theme is FSE theme
 	 * @since 1.6.26
@@ -90,7 +144,7 @@ class WC_Brands {
 	 */
 	public function minimum_version_blocks() {
 		/* translators: %s: WooCommerce link */
-		echo '<div class="error"><p>' . sprintf( esc_html__( 'Full Site Editor themes require %s >= 6.1 for full compatibility with WooCommerce Brands.', 'woocommerce-brands' ), '<a href="https://woocommerce.com/" target="_blank">WooCommerce</a>' ) . '</p></div>';
+		echo '<div class="error"><p>' . sprintf( esc_html__( 'Full Site Editor themes require %s >= 6.1 for full compatibility with WooCommerce Brands.', 'woocommerce-brands' ), '<a href="https://woo.com/" target="_blank">WooCommerce</a>' ) . '</p></div>';
 	}
 
 	/**
@@ -206,19 +260,20 @@ class WC_Brands {
 			apply_filters( 'register_taxonomy_product_brand', array(
 				'hierarchical'          => true,
 				'update_count_callback' => '_update_post_term_count',
-				'label'                 => __( 'Brands', 'woocommerce-brands'),
+				'label'                 => __( 'Brands', 'woocommerce-brands' ),
 				'labels'                => array(
-						'name'              => __( 'Brands', 'woocommerce-brands' ),
-						'singular_name'     => __( 'Brand', 'woocommerce-brands' ),
-						'search_items'      => __( 'Search Brands', 'woocommerce-brands' ),
-						'all_items'         => __( 'All Brands', 'woocommerce-brands' ),
-						'parent_item'       => __( 'Parent Brand', 'woocommerce-brands' ),
-						'parent_item_colon' => __( 'Parent Brand:', 'woocommerce-brands' ),
-						'edit_item'         => __( 'Edit Brand', 'woocommerce-brands' ),
-						'update_item'       => __( 'Update Brand', 'woocommerce-brands' ),
-						'add_new_item'      => __( 'Add New Brand', 'woocommerce-brands' ),
-						'new_item_name'     => __( 'New Brand Name', 'woocommerce-brands' ),
-						'not_found'         => __( 'No Brands Found', 'woocommerce-brands' ),
+					'name'              => __( 'Brands', 'woocommerce-brands' ),
+					'singular_name'     => __( 'Brand', 'woocommerce-brands' ),
+					'search_items'      => __( 'Search Brands', 'woocommerce-brands' ),
+					'all_items'         => __( 'All Brands', 'woocommerce-brands' ),
+					'parent_item'       => __( 'Parent Brand', 'woocommerce-brands' ),
+					'parent_item_colon' => __( 'Parent Brand:', 'woocommerce-brands' ),
+					'edit_item'         => __( 'Edit Brand', 'woocommerce-brands' ),
+					'update_item'       => __( 'Update Brand', 'woocommerce-brands' ),
+					'add_new_item'      => __( 'Add New Brand', 'woocommerce-brands' ),
+					'new_item_name'     => __( 'New Brand Name', 'woocommerce-brands' ),
+					'not_found'         => __( 'No Brands Found', 'woocommerce-brands' ),
+					'back_to_items'     => __( '&larr; Go to Brands', 'woocommerce-brands' ),
 				),
 
 				'show_ui'           => true,
@@ -495,6 +550,13 @@ class WC_Brands {
 		$alphabet       = apply_filters( 'woocommerce_brands_list_alphabet', range( 'a', 'z' ) );
 		$numbers        = apply_filters( 'woocommerce_brands_list_numbers', '0-9' );
 
+		/**
+		 * Check for empty brands and remove them from the list.
+		 */
+		if ( ! $show_empty_brands ) {
+			$terms = $this->remove_terms_with_empty_products( $terms );
+		}
+
 		foreach ( $terms as $term ) {
 			$term_letter = $this->get_brand_name_first_character( $term->name );
 
@@ -591,6 +653,10 @@ class WC_Brands {
 			return;
 		}
 
+		if ( $hide_empty ) {
+			$brands = $this->remove_terms_with_empty_products( $brands );
+		}
+
 		ob_start();
 
 		wc_get_template( 'widgets/brand-thumbnails.php', array(
@@ -626,6 +692,12 @@ class WC_Brands {
 		$exclude = array_map( 'intval', explode( ',', $args['exclude'] ) );
 		$order   = 'name' === $args['orderby'] ? 'asc' : 'desc';
 
+		if ( 'true' === $args['show_empty'] ) {
+			$hide_empty = false;
+		} else {
+			$hide_empty = true;
+		}
+
 		$brands = get_terms(
 			'product_brand',
 			array(
@@ -639,6 +711,10 @@ class WC_Brands {
 
 		if ( ! $brands ) {
 			return;
+		}
+
+		if ( $hide_empty ) {
+			$brands = $this->remove_terms_with_empty_products( $brands );
 		}
 
 		ob_start();
@@ -806,7 +882,16 @@ class WC_Brands {
 		$brands     = isset( $params['brands'] ) ? $params['brands'] : array();
 
 		if ( ! empty( $brands ) ) {
-			$brands = array_map( 'absint', $brands );
+			if ( is_array( $brands[0] ) && array_key_exists( 'id', $brands[0] ) ) {
+				$brands = array_map(
+					function ( $brand ) {
+						return absint( $brand['id'] );
+					},
+					$brands
+				);
+			} else {
+				$brands = array_map( 'absint', $brands );
+			}
 			wp_set_object_terms( $product_id, $brands, 'product_brand' );
 		}
 	}
@@ -917,6 +1002,10 @@ class WC_Brands {
 	 */
 	public function duplicate_add_product_brand_terms( $product_id ) {
 		$product = wc_get_product( $product_id );
+		// bail if product isn't found
+		if ( ! $product instanceof WC_Product ) {
+			return;
+		}
 		$term_ids = $product->get_meta( 'duplicate_temp_brand_ids' );
 		if ( empty( $term_ids ) ) {
 			return;
@@ -924,6 +1013,22 @@ class WC_Brands {
 		$term_taxonomy_ids = wp_set_object_terms( $product_id, $term_ids, 'product_brand' );
 		$product->delete_meta_data( 'duplicate_temp_brand_ids' );
 		$product->save();
+	}
+
+	/**
+	 * Remove terms with empty products.
+	 *
+	 * @param WP_Term[] $terms The terms array that needs to be removed of empty products.
+	 *
+	 * @return WP_Term[]
+	 */
+	private function remove_terms_with_empty_products( $terms ) {
+		return array_filter(
+			$terms,
+			function( $term ) {
+				return $term->count > 0;
+			}
+		);
 	}
 }
 
